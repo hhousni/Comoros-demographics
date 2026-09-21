@@ -56,6 +56,10 @@ def strip_admin_prefix(value, prefixes):
     return text
 
 
+def canonical_admin_name(value, prefixes):
+    return normalize_name(strip_admin_prefix(value, prefixes))
+
+
 def split_localized_name(value):
     if pd.isna(value):
         return "", ""
@@ -158,7 +162,7 @@ if clean_input.exists():
     pref_map = dict(
         zip(
             prefecture_df["prefecture_name"].apply(
-                lambda value: strip_admin_prefix(value, PREFECTURE_PREFIXES)
+                lambda value: canonical_admin_name(value, PREFECTURE_PREFIXES)
             ),
             prefecture_df["prefecture_id"],
         )
@@ -173,10 +177,10 @@ if clean_input.exists():
         zip(
             zip(
                 commune_lookup["prefecture_name"].apply(
-                    lambda value: strip_admin_prefix(value, PREFECTURE_PREFIXES)
+                    lambda value: canonical_admin_name(value, PREFECTURE_PREFIXES)
                 ),
                 commune_lookup["commune_name"].apply(
-                    lambda value: strip_admin_prefix(value, COMMUNE_PREFIXES)
+                    lambda value: canonical_admin_name(value, COMMUNE_PREFIXES)
                 ),
             ),
             commune_lookup["commune_id"],
@@ -184,10 +188,10 @@ if clean_input.exists():
     )
 
     local_df["prefecture_name"] = local_df["prefecture"].apply(
-        lambda value: strip_admin_prefix(value, PREFECTURE_PREFIXES)
+        lambda value: canonical_admin_name(value, PREFECTURE_PREFIXES)
     )
     local_df["commune_name"] = local_df["commune"].apply(
-        lambda value: strip_admin_prefix(value, COMMUNE_PREFIXES)
+        lambda value: canonical_admin_name(value, COMMUNE_PREFIXES)
     )
     local_df["prefecture_key"] = local_df["prefecture_name"].apply(
         lambda value: PREFECTURE_NAME_ALIASES.get(value, value)
