@@ -124,6 +124,20 @@ if input_file.exists():
         "country_id",
     ]
 else:
+    fallback_files = [
+        output_dir / "master_country.xlsx",
+        output_dir / "master_island.xlsx",
+        output_dir / "master_prefecture.xlsx",
+        output_dir / "master_commune.xlsx",
+    ]
+    missing_fallback_files = [str(path) for path in fallback_files if not path.exists()]
+    if missing_fallback_files:
+        missing_files = ", ".join(missing_fallback_files)
+        raise FileNotFoundError(
+            "Missing required fallback master workbook(s): "
+            f"{missing_files}. Add raw_data/com_admin_boundaries.xlsx or restore these files."
+        )
+
     country_df = pd.read_excel(output_dir / "master_country.xlsx")
     island_df = pd.read_excel(output_dir / "master_island.xlsx")
     prefecture_df = pd.read_excel(output_dir / "master_prefecture.xlsx")
