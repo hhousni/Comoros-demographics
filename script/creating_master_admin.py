@@ -15,6 +15,9 @@ COMMUNE_NAME_ALIASES = {
     "shaweni": "chaweni",
 }
 
+PREFECTURE_PREFIXES = ("prefecture",)
+COMMUNE_PREFIXES = ("commune",)
+
 
 def normalize_name(value):
     if pd.isna(value):
@@ -33,12 +36,17 @@ def normalize_name(value):
     return text
 
 
-def strip_admin_prefix(value, level):
+def strip_admin_prefix(value, prefixes):
     if pd.isna(value):
         return ""
     text = normalize_name(value)
-    pattern = rf"^(?:{level})\s+(?:de\s+)?"
-    return re.sub(pattern, "", text, flags=re.IGNORECASE).strip()
+    for prefix in prefixes:
+        normalized_prefix = normalize_name(prefix)
+        pattern = rf"^(?:{re.escape(normalized_prefix)})\s+(?:de\s+)?"
+        stripped = re.sub(pattern, "", text, count=1, flags=re.IGNORECASE).strip()
+        if stripped != text:
+            return stripped
+    return text
 
 
 def split_localized_name(value):
@@ -158,10 +166,10 @@ if clean_input.exists():
     )
 
     local_df["prefecture_name"] = local_df["prefecture"].apply(
-        lambda value: strip_admin_prefix(value, "prefecture")
+        lambda value: strip_admin_prefix(value, PREFECTURE_PREFIXES)
     )
     local_df["commune_name"] = local_df["commune"].apply(
-        lambda value: strip_admin_prefix(value, "commune")
+        lambda value: strip_admin_prefix(value, COMMUNE_PREFIXES)
     )
     local_df["commune_key"] = local_df["commune_name"].apply(
         lambda value: COMMUNE_NAME_ALIASES.get(value, value)
