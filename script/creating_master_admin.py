@@ -36,8 +36,9 @@ def normalize_name(value):
 def strip_admin_prefix(value, level):
     if pd.isna(value):
         return ""
+    text = normalize_name(value)
     pattern = rf"^(?:{level})\s+(?:de\s+)?"
-    return re.sub(pattern, "", str(value).strip(), flags=re.IGNORECASE).strip()
+    return re.sub(pattern, "", text, flags=re.IGNORECASE).strip()
 
 
 def split_localized_name(value):
@@ -139,25 +140,33 @@ if clean_input.exists():
     local_df["country_id"] = "KM"
     local_df["island_id"] = local_df["island"].map(island_code_map)
 
-    prefecture_df["norm"] = prefecture_df["prefecture_name"].apply(normalize_name)
-    pref_map = dict(zip(prefecture_df["norm"], prefecture_df["prefecture_id"]))
+    pref_map = dict(
+        zip(
+            prefecture_df["prefecture_name"].apply(normalize_name),
+            prefecture_df["prefecture_id"],
+        )
+    )
 
-    commune_df["norm"] = commune_df["commune_name"].apply(normalize_name)
-    commune_map = dict(zip(commune_df["norm"], commune_df["commune_id"]))
+    commune_map = dict(
+        zip(
+            commune_df["commune_name"].apply(normalize_name),
+            commune_df["commune_id"],
+        )
+    )
     commune_to_prefecture = dict(
         zip(commune_df["commune_id"], commune_df["prefecture_id"])
     )
 
     local_df["prefecture_name"] = local_df["prefecture"].apply(
-        lambda value: strip_admin_prefix(value, "préfecture|prefecture")
+        lambda value: strip_admin_prefix(value, "prefecture")
     )
     local_df["commune_name"] = local_df["commune"].apply(
         lambda value: strip_admin_prefix(value, "commune")
     )
     local_df["commune_key"] = local_df["commune_name"].apply(
-        lambda value: COMMUNE_NAME_ALIASES.get(normalize_name(value), normalize_name(value))
+        lambda value: COMMUNE_NAME_ALIASES.get(value, value)
     )
-    local_df["prefecture_key"] = local_df["prefecture_name"].apply(normalize_name)
+    local_df["prefecture_key"] = local_df["prefecture_name"]
     local_df["commune_id"] = local_df["commune_key"].apply(commune_map.get)
     local_df["prefecture_id"] = local_df["prefecture_key"].apply(pref_map.get)
     local_df["prefecture_id"] = local_df["prefecture_id"].fillna(
