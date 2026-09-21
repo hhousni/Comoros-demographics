@@ -15,6 +15,13 @@ COMMUNE_NAME_ALIASES = {
     "shaweni": "chaweni",
 }
 
+PREFECTURE_NAME_ALIASES = {
+    "mboude": "mitsamiouli mboude",
+    "mitsamiouli": "mitsamiouli mboude",
+    "moya": "sima",
+    "nioumachoua": "nioumachioi",
+}
+
 PREFECTURE_PREFIXES = ("prefecture",)
 COMMUNE_PREFIXES = ("commune",)
 
@@ -155,14 +162,19 @@ if clean_input.exists():
         )
     )
 
+    commune_lookup = commune_df.merge(
+        prefecture_df[["prefecture_id", "prefecture_name"]],
+        on="prefecture_id",
+        how="left",
+    )
     commune_map = dict(
         zip(
-            commune_df["commune_name"].apply(normalize_name),
-            commune_df["commune_id"],
+            zip(
+                commune_lookup["prefecture_name"].apply(normalize_name),
+                commune_lookup["commune_name"].apply(normalize_name),
+            ),
+            commune_lookup["commune_id"],
         )
-    )
-    commune_to_prefecture = dict(
-        zip(commune_df["commune_id"], commune_df["prefecture_id"])
     )
 
     local_df["prefecture_name"] = local_df["prefecture"].apply(
@@ -171,15 +183,17 @@ if clean_input.exists():
     local_df["commune_name"] = local_df["commune"].apply(
         lambda value: strip_admin_prefix(value, COMMUNE_PREFIXES)
     )
+    local_df["prefecture_key"] = local_df["prefecture_name"].apply(
+        lambda value: PREFECTURE_NAME_ALIASES.get(value, value)
+    )
     local_df["commune_key"] = local_df["commune_name"].apply(
         lambda value: COMMUNE_NAME_ALIASES.get(value, value)
     )
-    local_df["prefecture_key"] = local_df["prefecture_name"]
-    local_df["commune_id"] = local_df["commune_key"].apply(commune_map.get)
-    local_df["prefecture_id"] = local_df["prefecture_key"].apply(pref_map.get)
-    local_df["prefecture_id"] = local_df["prefecture_id"].fillna(
-        local_df["commune_id"].map(commune_to_prefecture)
+    local_df["commune_lookup_key"] = list(
+        zip(local_df["prefecture_key"], local_df["commune_key"])
     )
+    local_df["commune_id"] = local_df["commune_lookup_key"].map(commune_map)
+    local_df["prefecture_id"] = local_df["prefecture_key"].apply(pref_map.get)
 
     local_df["town_village_id"] = ""
     for commune_id, group in local_df.groupby("commune_id", dropna=False):
