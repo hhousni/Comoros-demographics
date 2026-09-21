@@ -157,7 +157,9 @@ if clean_input.exists():
 
     pref_map = dict(
         zip(
-            prefecture_df["prefecture_name"].apply(normalize_name),
+            prefecture_df["prefecture_name"].apply(
+                lambda value: strip_admin_prefix(value, PREFECTURE_PREFIXES)
+            ),
             prefecture_df["prefecture_id"],
         )
     )
@@ -170,8 +172,12 @@ if clean_input.exists():
     commune_map = dict(
         zip(
             zip(
-                commune_lookup["prefecture_name"].apply(normalize_name),
-                commune_lookup["commune_name"].apply(normalize_name),
+                commune_lookup["prefecture_name"].apply(
+                    lambda value: strip_admin_prefix(value, PREFECTURE_PREFIXES)
+                ),
+                commune_lookup["commune_name"].apply(
+                    lambda value: strip_admin_prefix(value, COMMUNE_PREFIXES)
+                ),
             ),
             commune_lookup["commune_id"],
         )
