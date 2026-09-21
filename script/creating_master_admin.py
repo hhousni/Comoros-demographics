@@ -60,6 +60,13 @@ def canonical_admin_name(value, prefixes):
     return normalize_name(strip_admin_prefix(value, prefixes))
 
 
+def validate_columns(df, required_columns, label):
+    missing_columns = [column for column in required_columns if column not in df.columns]
+    if missing_columns:
+        missing = ", ".join(missing_columns)
+        raise KeyError(f"Missing required columns in {label}: {missing}")
+
+
 def split_localized_name(value):
     if pd.isna(value):
         return "", ""
@@ -142,6 +149,23 @@ else:
     island_df = pd.read_excel(output_dir / "master_island.xlsx")
     prefecture_df = pd.read_excel(output_dir / "master_prefecture.xlsx")
     commune_df = pd.read_excel(output_dir / "master_commune.xlsx")
+
+    validate_columns(country_df, ["country_name", "country_id"], "master_country.xlsx")
+    validate_columns(
+        island_df,
+        ["country_id", "island_id", "island_name_fr", "island_name_local"],
+        "master_island.xlsx",
+    )
+    validate_columns(
+        prefecture_df,
+        ["prefecture_name", "prefecture_id", "island_id", "country_id"],
+        "master_prefecture.xlsx",
+    )
+    validate_columns(
+        commune_df,
+        ["commune_name", "commune_id", "prefecture_id", "island_id", "country_id"],
+        "master_commune.xlsx",
+    )
 
 country_df.to_excel(output_dir / "master_country.xlsx", index=False)
 island_df.to_excel(output_dir / "master_island.xlsx", index=False)
