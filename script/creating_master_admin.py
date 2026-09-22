@@ -7,6 +7,30 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
 
+ISLAND_CODE_MAP = {
+    "MWALI": "KM3",
+    "NDZUWANI": "KM1",
+    "NGAZIDJA": "KM2",
+}
+
+PREFECTURE_ALIASES = {
+    "mboude": "Mitsamiouli-Mboudé",
+    "mitsamiouli": "Mitsamiouli-Mboudé",
+    "moya": "Sima",
+    "nioumachoua": "Nioumachioi",
+}
+
+COMMUNE_ALIASES = {
+    "bambao mstanga": "Bambao Mtsanga",
+    "bandrani ya mitsangani": "Bandrani Ya Mtsangani",
+    "bambao ya djou": "Bambao Yadjou",
+    "moinbassa": "Moimbassa",
+    "ngadzale": "Ngandzalé",
+    "oichili yaboini": "Oichili Yamboini",
+    "shaweni": "Chaweni",
+}
+
+
 def normalize_name(value):
     if pd.isna(value):
         return ""
@@ -103,27 +127,27 @@ def load_admin_frames(project_root, input_file):
         island_df = island_df[["adm0_pcode", "adm1_pcode", "island_name_fr", "island_name_local"]]
         island_df.columns = ["country_id", "island_id", "island_name_fr", "island_name_local"]
 
-        prefecture_lookup = pd.read_excel(input_file, sheet_name="com_admin2")[
+        prefecture_df = pd.read_excel(input_file, sheet_name="com_admin2")[
             ["adm2_name", "adm2_pcode", "adm1_pcode", "adm0_pcode"]
         ].drop_duplicates().reset_index(drop=True)
-        prefecture_lookup.columns = [
+        prefecture_df.columns = [
             "prefecture_name",
             "prefecture_id",
             "island_id",
             "country_id",
         ]
 
-        commune_lookup = pd.read_excel(input_file, sheet_name="com_admin3")[
+        commune_df = pd.read_excel(input_file, sheet_name="com_admin3")[
             ["adm3_name", "adm3_pcode", "adm2_pcode", "adm1_pcode", "adm0_pcode"]
         ].drop_duplicates().reset_index(drop=True)
-        commune_lookup.columns = [
+        commune_df.columns = [
             "commune_name",
             "commune_id",
             "prefecture_id",
             "island_id",
             "country_id",
         ]
-        return country_df, island_df, prefecture_lookup, commune_lookup
+        return country_df, island_df, prefecture_df, commune_df
 
     country_path = project_root / "masters" / "master_country.xlsx"
     island_path = project_root / "masters" / "master_island.xlsx"
@@ -139,24 +163,18 @@ def load_admin_frames(project_root, input_file):
             "Missing admin lookup workbook(s): " + ", ".join(missing_files)
         )
 
-    country_df = pd.read_excel(country_path)
-    island_df = pd.read_excel(island_path)
-    prefecture_lookup = pd.read_excel(prefecture_path)
-    commune_lookup = pd.read_excel(commune_path)
-    return country_df, island_df, prefecture_lookup, commune_lookup
+    return (
+        pd.read_excel(country_path),
+        pd.read_excel(island_path),
+        pd.read_excel(prefecture_path),
+        pd.read_excel(commune_path),
+    )
 
 
-project_root = Path(__file__).resolve().parent.parent
-input_file = project_root / "raw_data" / "com_admin_boundaries.xlsx"
-output_dir = project_root / "masters"
+def load_clean_localities(clean_input):
+    if not clean_input.exists():
+        return None
 
-output_dir.mkdir(parents=True, exist_ok=True)
-
-country_df, island_df, prefecture_df, commune_df = load_admin_frames(project_root, input_file)
-
-# Town/village detail master limited to identifiers, names and coordinates.
-clean_input = project_root / "clean_data" / "comoros_administrative_clean.xlsx"
-if clean_input.exists():
     local_df = pd.read_excel(clean_input)
     local_df = local_df[
         [
@@ -169,54 +187,47 @@ if clean_input.exists():
             "Longitude_final",
         ]
     ].copy()
-    local_df = local_df.rename(columns={"town_village": "town_village_name"})
+    return local_df.rename(columns={"town_village": "town_village_name"})
 
-    island_code_map = {
-        "MWALI": "KM3",
-        "NDZUWANI": "KM1",
-        "NGAZIDJA": "KM2",
-    }
-    local_df["country_id"] = "KM"
-    local_df["island_id"] = local_df["island"].map(island_code_map)
 
+def add_lookup_normalization(prefecture_df, commune_df):
     prefecture_lookup = prefecture_df.copy()
     commune_lookup = commune_df.copy()
-    prefecture_lookup = prefecture_lookup.copy()
-    commune_lookup = commune_lookup.copy()
     prefecture_lookup["norm"] = prefecture_lookup["prefecture_name"].apply(normalize_name)
     commune_lookup["norm"] = commune_lookup["commune_name"].apply(normalize_name)
+    return prefecture_lookup, commune_lookup
+
+
+def normalize_locality_admin_names(local_df):
+    normalized_df = local_df.copy()
+    normalized_df["country_id"] = "KM"
+    normalized_df["island_id"] = normalized_df["island"].map(ISLAND_CODE_MAP)
+    normalized_df["prefecture_name"] = normalized_df["prefecture"].apply(
+        lambda value: clean_admin_name(value, "prefecture")
+    )
+    normalized_df["commune_name"] = normalized_df["commune"].apply(
+        lambda value: clean_admin_name(value, "commune")
+    )
+    normalized_df["prefecture_name"] = apply_aliases(
+        normalized_df["prefecture_name"], PREFECTURE_ALIASES
+    )
+    normalized_df["commune_name"] = apply_aliases(
+        normalized_df["commune_name"], COMMUNE_ALIASES
+    )
+    return normalized_df
+
+
+def reconcile_admin_ids(local_df, prefecture_df, commune_df):
+    reconciled_df = normalize_locality_admin_names(local_df)
+    prefecture_lookup, commune_lookup = add_lookup_normalization(prefecture_df, commune_df)
     pref_map = dict(zip(prefecture_lookup["norm"], prefecture_lookup["prefecture_id"]))
     commune_map = dict(zip(commune_lookup["norm"], commune_lookup["commune_id"]))
 
-    prefecture_aliases = {
-        "mboude": "Mitsamiouli-Mboudé",
-        "mitsamiouli": "Mitsamiouli-Mboudé",
-        "moya": "Sima",
-        "nioumachoua": "Nioumachioi",
-    }
-    commune_aliases = {
-        "bambao mstanga": "Bambao Mtsanga",
-        "bandrani ya mitsangani": "Bandrani Ya Mtsangani",
-        "bambao ya djou": "Bambao Yadjou",
-        "moinbassa": "Moimbassa",
-        "ngadzale": "Ngandzalé",
-        "oichili yaboini": "Oichili Yamboini",
-        "shaweni": "Chaweni",
-    }
-
-    local_df["prefecture_name"] = local_df["prefecture"].apply(
-        lambda value: clean_admin_name(value, "prefecture")
+    reconciled_df["prefecture_id"] = reconciled_df["prefecture_name"].apply(
+        lambda value: pref_map.get(normalize_name(value))
     )
-    local_df["commune_name"] = local_df["commune"].apply(
-        lambda value: clean_admin_name(value, "commune")
-    )
-    local_df["prefecture_name"] = apply_aliases(local_df["prefecture_name"], prefecture_aliases)
-    local_df["commune_name"] = apply_aliases(local_df["commune_name"], commune_aliases)
-    local_df["prefecture_id"] = local_df["prefecture_name"].apply(
-        lambda x: pref_map.get(normalize_name(x))
-    )
-    local_df["commune_id"] = local_df["commune_name"].apply(
-        lambda x: commune_map.get(normalize_name(x))
+    reconciled_df["commune_id"] = reconciled_df["commune_name"].apply(
+        lambda value: commune_map.get(normalize_name(value))
     )
 
     commune_id_lookup = unique_lookup(
@@ -224,22 +235,22 @@ if clean_input.exists():
         "commune_id",
         ["prefecture_id", "island_id", "country_id"],
     )
-    local_df = local_df.merge(
+    reconciled_df = reconciled_df.merge(
         commune_id_lookup,
         on="commune_id",
         how="left",
         suffixes=("", "_from_commune"),
     )
-    local_df["prefecture_id"] = local_df["prefecture_id_from_commune"].combine_first(
-        local_df["prefecture_id"]
+    reconciled_df["prefecture_id"] = reconciled_df["prefecture_id_from_commune"].combine_first(
+        reconciled_df["prefecture_id"]
     )
-    local_df["island_id"] = local_df["island_id_from_commune"].combine_first(
-        local_df["island_id"]
+    reconciled_df["island_id"] = reconciled_df["island_id_from_commune"].combine_first(
+        reconciled_df["island_id"]
     )
-    local_df["country_id"] = local_df["country_id_from_commune"].combine_first(
-        local_df["country_id"]
+    reconciled_df["country_id"] = reconciled_df["country_id_from_commune"].combine_first(
+        reconciled_df["country_id"]
     )
-    local_df = local_df.drop(
+    reconciled_df = reconciled_df.drop(
         columns=["prefecture_id_from_commune", "island_id_from_commune", "country_id_from_commune"]
     )
 
@@ -248,21 +259,23 @@ if clean_input.exists():
         "prefecture_id",
         ["island_id", "country_id"],
     )
-    local_df = local_df.merge(
+    reconciled_df = reconciled_df.merge(
         prefecture_id_lookup,
         on="prefecture_id",
         how="left",
         suffixes=("", "_from_prefecture"),
     )
-    local_df["island_id"] = local_df["island_id_from_prefecture"].combine_first(
-        local_df["island_id"]
+    reconciled_df["island_id"] = reconciled_df["island_id_from_prefecture"].combine_first(
+        reconciled_df["island_id"]
     )
-    local_df["country_id"] = local_df["country_id_from_prefecture"].combine_first(
-        local_df["country_id"]
+    reconciled_df["country_id"] = reconciled_df["country_id_from_prefecture"].combine_first(
+        reconciled_df["country_id"]
     )
-    local_df = local_df.drop(columns=["island_id_from_prefecture", "country_id_from_prefecture"])
+    return reconciled_df.drop(columns=["island_id_from_prefecture", "country_id_from_prefecture"])
 
-    local_df = local_df.drop_duplicates(
+
+def build_town_master(local_df):
+    deduplicated_df = local_df.drop_duplicates(
         subset=[
             "country_id",
             "island_id",
@@ -274,15 +287,15 @@ if clean_input.exists():
         ]
     ).reset_index(drop=True)
 
-    local_df["town_village_id"] = ""
-    for commune_id, group in local_df.groupby("commune_id", dropna=False):
+    deduplicated_df["town_village_id"] = ""
+    for commune_id, group in deduplicated_df.groupby("commune_id", dropna=False):
         if pd.isna(commune_id):
-            local_df.loc[group.index, "town_village_id"] = ""
+            deduplicated_df.loc[group.index, "town_village_id"] = ""
             continue
         ids = [f"{commune_id}_{idx:04d}" for idx in range(1, len(group) + 1)]
-        local_df.loc[group.index, "town_village_id"] = ids
+        deduplicated_df.loc[group.index, "town_village_id"] = ids
 
-    town_master = local_df[
+    town_master = deduplicated_df[
         [
             "country_id",
             "island_id",
@@ -304,30 +317,89 @@ if clean_input.exists():
         "latitude",
         "longitude",
     ]
-    town_master.to_excel(output_dir / "master_town_village.xlsx", index=False)
+    return town_master
 
+
+def filter_admin_frames_to_used_ids(country_df, island_df, prefecture_df, commune_df, town_master):
     used_country_ids = set(town_master["country_id"].dropna())
     used_island_ids = set(town_master["island_id"].dropna())
     used_prefecture_ids = set(town_master["prefecture_id"].dropna())
     used_commune_ids = set(town_master["commune_id"].dropna())
 
-    country_df = country_df[country_df["country_id"].isin(used_country_ids)].reset_index(drop=True)
-    island_df = island_df[island_df["island_id"].isin(used_island_ids)].reset_index(drop=True)
-    prefecture_df = prefecture_df[
-        prefecture_df["prefecture_id"].isin(used_prefecture_ids)
-    ].reset_index(drop=True)
-    commune_df = commune_df[commune_df["commune_id"].isin(used_commune_ids)].reset_index(drop=True)
+    return (
+        country_df[country_df["country_id"].isin(used_country_ids)].reset_index(drop=True),
+        island_df[island_df["island_id"].isin(used_island_ids)].reset_index(drop=True),
+        prefecture_df[prefecture_df["prefecture_id"].isin(used_prefecture_ids)].reset_index(drop=True),
+        commune_df[commune_df["commune_id"].isin(used_commune_ids)].reset_index(drop=True),
+    )
 
-country_df.to_excel(output_dir / "master_country.xlsx", index=False)
-island_df.to_excel(output_dir / "master_island.xlsx", index=False)
-prefecture_df.to_excel(output_dir / "master_prefecture.xlsx", index=False)
-commune_df.to_excel(output_dir / "master_commune.xlsx", index=False)
 
-format_existing_master_workbooks(output_dir)
+def validate_master_quality(country_df, island_df, prefecture_df, commune_df, town_master):
+    missing_counts = {
+        "prefecture_id": int(town_master["prefecture_id"].isna().sum()),
+        "commune_id": int(town_master["commune_id"].isna().sum()),
+        "town_village_id": int(town_master["town_village_id"].fillna("").eq("").sum()),
+    }
+    unexpected_missing = {key: value for key, value in missing_counts.items() if value > 0}
+    if unexpected_missing:
+        raise ValueError(f"Incomplete town master IDs detected: {unexpected_missing}")
 
-print("Official admin masters created successfully in 'masters/' :")
-print("1. master_country.xlsx")
-print("2. master_island.xlsx")
-print("3. master_prefecture.xlsx")
-print("4. master_commune.xlsx")
-print("5. master_town_village.xlsx")
+    duplicate_count = int(
+        town_master.duplicated(
+            ["island_id", "prefecture_id", "commune_id", "town_village_name", "latitude", "longitude"]
+        ).sum()
+    )
+    if duplicate_count > 0:
+        raise ValueError(f"Duplicate town master rows detected: {duplicate_count}")
+
+    if set(town_master["country_id"].dropna()) - set(country_df["country_id"]):
+        raise ValueError("Town master references country IDs missing from master_country.xlsx")
+    if set(town_master["island_id"].dropna()) - set(island_df["island_id"]):
+        raise ValueError("Town master references island IDs missing from master_island.xlsx")
+    if set(town_master["prefecture_id"].dropna()) - set(prefecture_df["prefecture_id"]):
+        raise ValueError("Town master references prefecture IDs missing from master_prefecture.xlsx")
+    if set(town_master["commune_id"].dropna()) - set(commune_df["commune_id"]):
+        raise ValueError("Town master references commune IDs missing from master_commune.xlsx")
+
+
+def save_master_frames(output_dir, country_df, island_df, prefecture_df, commune_df, town_master=None):
+    country_df.to_excel(output_dir / "master_country.xlsx", index=False)
+    island_df.to_excel(output_dir / "master_island.xlsx", index=False)
+    prefecture_df.to_excel(output_dir / "master_prefecture.xlsx", index=False)
+    commune_df.to_excel(output_dir / "master_commune.xlsx", index=False)
+    if town_master is not None:
+        town_master.to_excel(output_dir / "master_town_village.xlsx", index=False)
+
+
+def main():
+    project_root = Path(__file__).resolve().parent.parent
+    input_file = project_root / "raw_data" / "com_admin_boundaries.xlsx"
+    clean_input = project_root / "clean_data" / "comoros_administrative_clean.xlsx"
+    output_dir = project_root / "masters"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    country_df, island_df, prefecture_df, commune_df = load_admin_frames(project_root, input_file)
+    town_master = None
+
+    local_df = load_clean_localities(clean_input)
+    if local_df is not None:
+        reconciled_localities = reconcile_admin_ids(local_df, prefecture_df, commune_df)
+        town_master = build_town_master(reconciled_localities)
+        country_df, island_df, prefecture_df, commune_df = filter_admin_frames_to_used_ids(
+            country_df, island_df, prefecture_df, commune_df, town_master
+        )
+        validate_master_quality(country_df, island_df, prefecture_df, commune_df, town_master)
+
+    save_master_frames(output_dir, country_df, island_df, prefecture_df, commune_df, town_master)
+    format_existing_master_workbooks(output_dir)
+
+    print("Official admin masters created successfully in 'masters/' :")
+    print("1. master_country.xlsx")
+    print("2. master_island.xlsx")
+    print("3. master_prefecture.xlsx")
+    print("4. master_commune.xlsx")
+    print("5. master_town_village.xlsx")
+
+
+if __name__ == "__main__":
+    main()
