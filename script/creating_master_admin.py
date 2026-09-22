@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import unicodedata
 
 import pandas as pd
@@ -36,12 +37,9 @@ def clean_admin_name(value, level):
         return ""
     text = str(value).strip()
     if level == "prefecture":
-        return text.replace("Préfecture de ", "", 1).strip()
+        return re.sub(r"(?i)^pr[eé]fecture de\s+", "", text, count=1).strip()
     if level == "commune":
-        if text.startswith("Commune de "):
-            return text.replace("Commune de ", "", 1).strip()
-        if text.startswith("Commune "):
-            return text.replace("Commune ", "", 1).strip()
+        return re.sub(r"(?i)^commune(?: de)?\s+", "", text, count=1).strip()
     return text
 
 
