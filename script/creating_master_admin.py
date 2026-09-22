@@ -48,7 +48,7 @@ def apply_aliases(series, aliases):
 
 
 def unique_lookup(df, key, columns):
-    lookup = df[[key] + columns].dropna(subset=[key]).copy()
+    lookup = df[[key] + columns].dropna(subset=[key]).drop_duplicates().copy()
     if lookup.duplicated(subset=[key]).any():
         raise ValueError(f"Duplicate values found for {key} in admin lookup data")
     return lookup
