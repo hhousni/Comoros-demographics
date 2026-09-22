@@ -49,6 +49,13 @@ def apply_aliases(series, aliases):
     return series.apply(lambda value: aliases.get(normalize_name(value), value))
 
 
+def unique_lookup(df, key, columns):
+    lookup = df[[key] + columns].dropna(subset=[key]).copy()
+    if lookup.duplicated(subset=[key]).any():
+        raise ValueError(f"Duplicate values found for {key} in admin lookup data")
+    return lookup
+
+
 def load_lookup_frames(project_root, input_file):
     if input_file.exists():
         prefecture_lookup = pd.read_excel(input_file, sheet_name="com_admin2")[
@@ -174,10 +181,13 @@ if clean_input.exists():
         lambda x: commune_map.get(normalize_name(x))
     )
 
+    commune_id_lookup = unique_lookup(
+        commune_lookup,
+        "commune_id",
+        ["prefecture_id", "island_id", "country_id"],
+    )
     local_df = local_df.merge(
-        commune_lookup[
-            ["commune_id", "prefecture_id", "island_id", "country_id"]
-        ].drop_duplicates(),
+        commune_id_lookup,
         on="commune_id",
         how="left",
         suffixes=("", "_from_commune"),
@@ -193,10 +203,13 @@ if clean_input.exists():
         columns=["prefecture_id_from_commune", "island_id_from_commune", "country_id_from_commune"]
     )
 
+    prefecture_id_lookup = unique_lookup(
+        prefecture_lookup,
+        "prefecture_id",
+        ["island_id", "country_id"],
+    )
     local_df = local_df.merge(
-        prefecture_lookup[
-            ["prefecture_id", "island_id", "country_id"]
-        ].drop_duplicates(),
+        prefecture_id_lookup,
         on="prefecture_id",
         how="left",
         suffixes=("", "_from_prefecture"),
