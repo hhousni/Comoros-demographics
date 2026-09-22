@@ -44,7 +44,11 @@ def clean_admin_name(value, level):
 
 
 def apply_aliases(series, aliases):
-    return series.apply(lambda value: aliases.get(normalize_name(value), value))
+    def apply_alias(value):
+        cleaned_value = "" if pd.isna(value) else str(value).strip()
+        return aliases.get(normalize_name(cleaned_value), cleaned_value)
+
+    return series.apply(apply_alias)
 
 
 def unique_lookup(df, key, columns):
@@ -190,12 +194,14 @@ if clean_input.exists():
         how="left",
         suffixes=("", "_from_commune"),
     )
-    local_df["prefecture_id"] = local_df["prefecture_id"].fillna(
-        local_df["prefecture_id_from_commune"]
+    local_df["prefecture_id"] = local_df["prefecture_id_from_commune"].combine_first(
+        local_df["prefecture_id"]
     )
-    local_df["island_id"] = local_df["island_id"].fillna(local_df["island_id_from_commune"])
-    local_df["country_id"] = local_df["country_id"].fillna(
-        local_df["country_id_from_commune"]
+    local_df["island_id"] = local_df["island_id_from_commune"].combine_first(
+        local_df["island_id"]
+    )
+    local_df["country_id"] = local_df["country_id_from_commune"].combine_first(
+        local_df["country_id"]
     )
     local_df = local_df.drop(
         columns=["prefecture_id_from_commune", "island_id_from_commune", "country_id_from_commune"]
@@ -212,9 +218,11 @@ if clean_input.exists():
         how="left",
         suffixes=("", "_from_prefecture"),
     )
-    local_df["island_id"] = local_df["island_id"].fillna(local_df["island_id_from_prefecture"])
-    local_df["country_id"] = local_df["country_id"].fillna(
-        local_df["country_id_from_prefecture"]
+    local_df["island_id"] = local_df["island_id_from_prefecture"].combine_first(
+        local_df["island_id"]
+    )
+    local_df["country_id"] = local_df["country_id_from_prefecture"].combine_first(
+        local_df["country_id"]
     )
     local_df = local_df.drop(columns=["island_id_from_prefecture", "country_id_from_prefecture"])
 
