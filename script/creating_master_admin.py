@@ -1,4 +1,5 @@
 from pathlib import Path
+import unicodedata
 
 import pandas as pd
 
@@ -7,6 +8,7 @@ def normalize_name(value):
     if pd.isna(value):
         return ""
     text = str(value).strip().lower()
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
     text = text.replace("-", " ")
     text = text.replace("/", " ")
     text = text.replace(".", " ")
@@ -29,57 +31,83 @@ def split_localized_name(value):
     return text, text
 
 
+def clean_admin_name(value, level):
+    if pd.isna(value):
+        return ""
+    text = str(value).strip()
+    if level == "prefecture":
+        return text.replace("Préfecture de ", "", 1).strip()
+    if level == "commune":
+        if text.startswith("Commune de "):
+            return text.replace("Commune de ", "", 1).strip()
+        if text.startswith("Commune "):
+            return text.replace("Commune ", "", 1).strip()
+    return text
+
+
+def apply_aliases(series, aliases):
+    return series.apply(lambda value: aliases.get(normalize_name(value), value))
+
+
+def load_lookup_frames(project_root, input_file):
+    if input_file.exists():
+        prefecture_lookup = pd.read_excel(input_file, sheet_name="com_admin2")[
+            ["adm2_name", "adm2_pcode", "adm1_pcode", "adm0_pcode"]
+        ].drop_duplicates().reset_index(drop=True)
+        prefecture_lookup.columns = [
+            "prefecture_name",
+            "prefecture_id",
+            "island_id",
+            "country_id",
+        ]
+
+        commune_lookup = pd.read_excel(input_file, sheet_name="com_admin3")[
+            ["adm3_name", "adm3_pcode", "adm2_pcode", "adm1_pcode", "adm0_pcode"]
+        ].drop_duplicates().reset_index(drop=True)
+        commune_lookup.columns = [
+            "commune_name",
+            "commune_id",
+            "prefecture_id",
+            "island_id",
+            "country_id",
+        ]
+        return prefecture_lookup, commune_lookup
+
+    prefecture_lookup = pd.read_excel(project_root / "masters" / "master_prefecture.xlsx")
+    commune_lookup = pd.read_excel(project_root / "masters" / "master_commune.xlsx")
+    return prefecture_lookup, commune_lookup
+
+
 project_root = Path(__file__).resolve().parent.parent
 input_file = project_root / "raw_data" / "com_admin_boundaries.xlsx"
 output_dir = project_root / "masters"
 
-if not input_file.exists():
-    raise FileNotFoundError(f"Standard file not found: {input_file}")
-
 output_dir.mkdir(parents=True, exist_ok=True)
 
-# Country master: official code from the raw workbook
-country_df = pd.read_excel(input_file, sheet_name="com_admin0")[
-    ["adm0_name", "adm0_pcode"]
-].drop_duplicates().reset_index(drop=True)
-country_df.columns = ["country_name", "country_id"]
-country_df.to_excel(output_dir / "master_country.xlsx", index=False)
+if input_file.exists():
+    # Country master: official code from the raw workbook
+    country_df = pd.read_excel(input_file, sheet_name="com_admin0")[
+        ["adm0_name", "adm0_pcode"]
+    ].drop_duplicates().reset_index(drop=True)
+    country_df.columns = ["country_name", "country_id"]
+    country_df.to_excel(output_dir / "master_country.xlsx", index=False)
 
-# Island master: keep French and local names, plus official island code
-island_df = pd.read_excel(input_file, sheet_name="com_admin1")[
-    ["adm1_name", "adm1_pcode", "adm0_pcode"]
-].drop_duplicates().reset_index(drop=True)
-parsed = island_df["adm1_name"].apply(split_localized_name)
-island_df[["island_name_fr", "island_name_local"]] = pd.DataFrame(
-    parsed.tolist(), index=island_df.index
-)
-island_df = island_df[["adm0_pcode", "adm1_pcode", "island_name_fr", "island_name_local"]]
-island_df.columns = ["country_id", "island_id", "island_name_fr", "island_name_local"]
-island_df.to_excel(output_dir / "master_island.xlsx", index=False)
+    # Island master: keep French and local names, plus official island code
+    island_df = pd.read_excel(input_file, sheet_name="com_admin1")[
+        ["adm1_name", "adm1_pcode", "adm0_pcode"]
+    ].drop_duplicates().reset_index(drop=True)
+    parsed = island_df["adm1_name"].apply(split_localized_name)
+    island_df[["island_name_fr", "island_name_local"]] = pd.DataFrame(
+        parsed.tolist(), index=island_df.index
+    )
+    island_df = island_df[["adm0_pcode", "adm1_pcode", "island_name_fr", "island_name_local"]]
+    island_df.columns = ["country_id", "island_id", "island_name_fr", "island_name_local"]
+    island_df.to_excel(output_dir / "master_island.xlsx", index=False)
 
-# Prefecture and commune masters follow the official administrative standard.
-prefecture_df = pd.read_excel(input_file, sheet_name="com_admin2")[
-    ["adm2_name", "adm2_pcode", "adm1_pcode", "adm0_pcode"]
-].drop_duplicates().reset_index(drop=True)
-prefecture_df.columns = [
-    "prefecture_name",
-    "prefecture_id",
-    "island_id",
-    "country_id",
-]
-prefecture_df.to_excel(output_dir / "master_prefecture.xlsx", index=False)
-
-commune_df = pd.read_excel(input_file, sheet_name="com_admin3")[
-    ["adm3_name", "adm3_pcode", "adm2_pcode", "adm1_pcode", "adm0_pcode"]
-].drop_duplicates().reset_index(drop=True)
-commune_df.columns = [
-    "commune_name",
-    "commune_id",
-    "prefecture_id",
-    "island_id",
-    "country_id",
-]
-commune_df.to_excel(output_dir / "master_commune.xlsx", index=False)
+    # Prefecture and commune masters follow the official administrative standard.
+    prefecture_df, commune_df = load_lookup_frames(project_root, input_file)
+    prefecture_df.to_excel(output_dir / "master_prefecture.xlsx", index=False)
+    commune_df.to_excel(output_dir / "master_commune.xlsx", index=False)
 
 # Town/village detail master limited to identifiers, names and coordinates.
 clean_input = project_root / "clean_data" / "comoros_administrative_clean.xlsx"
@@ -97,6 +125,7 @@ if clean_input.exists():
         ]
     ].copy()
     local_df = local_df.rename(columns={"town_village": "town_village_name"})
+    local_df = local_df.drop_duplicates().reset_index(drop=True)
 
     island_code_map = {
         "MWALI": "KM3",
@@ -106,26 +135,77 @@ if clean_input.exists():
     local_df["country_id"] = "KM"
     local_df["island_id"] = local_df["island"].map(island_code_map)
 
-    raw_pref = pd.read_excel(input_file, sheet_name="com_admin2")
-    raw_pref["norm"] = raw_pref["adm2_name"].apply(normalize_name)
-    pref_map = dict(zip(raw_pref["norm"], raw_pref["adm2_pcode"]))
+    prefecture_lookup, commune_lookup = load_lookup_frames(project_root, input_file)
+    prefecture_lookup = prefecture_lookup.copy()
+    commune_lookup = commune_lookup.copy()
+    prefecture_lookup["norm"] = prefecture_lookup["prefecture_name"].apply(normalize_name)
+    commune_lookup["norm"] = commune_lookup["commune_name"].apply(normalize_name)
+    pref_map = dict(zip(prefecture_lookup["norm"], prefecture_lookup["prefecture_id"]))
+    commune_map = dict(zip(commune_lookup["norm"], commune_lookup["commune_id"]))
 
-    raw_commune = pd.read_excel(input_file, sheet_name="com_admin3")
-    raw_commune["norm"] = raw_commune["adm3_name"].apply(normalize_name)
-    commune_map = dict(zip(raw_commune["norm"], raw_commune["adm3_pcode"]))
+    prefecture_aliases = {
+        "mboude": "Mitsamiouli-Mboudé",
+        "mitsamiouli": "Mitsamiouli-Mboudé",
+        "moya": "Sima",
+        "nioumachoua": "Nioumachioi",
+    }
+    commune_aliases = {
+        "bambao mstanga": "Bambao Mtsanga",
+        "bandrani ya mitsangani": "Bandrani Ya Mtsangani",
+        "bambao ya djou": "Bambao Yadjou",
+        "moinbassa": "Moimbassa",
+        "ngadzale": "Ngandzalé",
+        "oichili yaboini": "Oichili Yamboini",
+        "shaweni": "Chaweni",
+    }
 
-    local_df["prefecture_name"] = (
-        local_df["prefecture"].str.replace("^Préfecture de ", "", regex=True).str.strip()
+    local_df["prefecture_name"] = local_df["prefecture"].apply(
+        lambda value: clean_admin_name(value, "prefecture")
     )
-    local_df["commune_name"] = (
-        local_df["commune"].str.replace("^Commune de ", "", regex=True).str.strip()
+    local_df["commune_name"] = local_df["commune"].apply(
+        lambda value: clean_admin_name(value, "commune")
     )
+    local_df["prefecture_name"] = apply_aliases(local_df["prefecture_name"], prefecture_aliases)
+    local_df["commune_name"] = apply_aliases(local_df["commune_name"], commune_aliases)
     local_df["prefecture_id"] = local_df["prefecture_name"].apply(
         lambda x: pref_map.get(normalize_name(x))
     )
     local_df["commune_id"] = local_df["commune_name"].apply(
         lambda x: commune_map.get(normalize_name(x))
     )
+
+    local_df = local_df.merge(
+        commune_lookup[
+            ["commune_id", "prefecture_id", "island_id", "country_id"]
+        ].drop_duplicates(),
+        on="commune_id",
+        how="left",
+        suffixes=("", "_from_commune"),
+    )
+    local_df["prefecture_id"] = local_df["prefecture_id"].fillna(
+        local_df["prefecture_id_from_commune"]
+    )
+    local_df["island_id"] = local_df["island_id"].fillna(local_df["island_id_from_commune"])
+    local_df["country_id"] = local_df["country_id"].fillna(
+        local_df["country_id_from_commune"]
+    )
+    local_df = local_df.drop(
+        columns=["prefecture_id_from_commune", "island_id_from_commune", "country_id_from_commune"]
+    )
+
+    local_df = local_df.merge(
+        prefecture_lookup[
+            ["prefecture_id", "island_id", "country_id"]
+        ].drop_duplicates(),
+        on="prefecture_id",
+        how="left",
+        suffixes=("", "_from_prefecture"),
+    )
+    local_df["island_id"] = local_df["island_id"].fillna(local_df["island_id_from_prefecture"])
+    local_df["country_id"] = local_df["country_id"].fillna(
+        local_df["country_id_from_prefecture"]
+    )
+    local_df = local_df.drop(columns=["island_id_from_prefecture", "country_id_from_prefecture"])
 
     local_df["town_village_id"] = ""
     for commune_id, group in local_df.groupby("commune_id", dropna=False):
