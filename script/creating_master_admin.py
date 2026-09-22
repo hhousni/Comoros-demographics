@@ -142,7 +142,6 @@ if clean_input.exists():
         ]
     ].copy()
     local_df = local_df.rename(columns={"town_village": "town_village_name"})
-    local_df = local_df.drop_duplicates().reset_index(drop=True)
 
     island_code_map = {
         "MWALI": "KM3",
@@ -233,6 +232,18 @@ if clean_input.exists():
         local_df["country_id"]
     )
     local_df = local_df.drop(columns=["island_id_from_prefecture", "country_id_from_prefecture"])
+
+    local_df = local_df.drop_duplicates(
+        subset=[
+            "country_id",
+            "island_id",
+            "prefecture_id",
+            "commune_id",
+            "town_village_name",
+            "Latitude_final",
+            "Longitude_final",
+        ]
+    ).reset_index(drop=True)
 
     local_df["town_village_id"] = ""
     for commune_id, group in local_df.groupby("commune_id", dropna=False):
