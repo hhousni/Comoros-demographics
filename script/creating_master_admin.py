@@ -3,6 +3,8 @@ import re
 import unicodedata
 
 import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
 
 
 def normalize_name(value):
@@ -59,6 +61,29 @@ def unique_lookup(df, key, columns):
     if conflicting_keys.any():
         raise ValueError(f"Duplicate values found for {key} in admin lookup data")
     return lookup.drop_duplicates(subset=[key]).copy()
+
+
+def format_master_workbook(path):
+    workbook = load_workbook(path)
+    worksheet = workbook.active
+    worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = worksheet.dimensions
+
+    for column_index, column_cells in enumerate(worksheet.iter_cols(), start=1):
+        values = [cell.value for cell in column_cells if cell.value is not None]
+        if not values:
+            continue
+        max_length = max(len(str(value)) for value in values)
+        worksheet.column_dimensions[get_column_letter(column_index)].width = min(
+            max_length + 2, 40
+        )
+
+    workbook.save(path)
+
+
+def format_existing_master_workbooks(output_dir):
+    for workbook_path in sorted(output_dir.glob("master_*.xlsx")):
+        format_master_workbook(workbook_path)
 
 
 def load_lookup_frames(project_root, input_file):
@@ -279,6 +304,8 @@ if clean_input.exists():
         "longitude",
     ]
     town_master.to_excel(output_dir / "master_town_village.xlsx", index=False)
+
+format_existing_master_workbooks(output_dir)
 
 print("Official admin masters created successfully in 'masters/' :")
 print("1. master_country.xlsx")
