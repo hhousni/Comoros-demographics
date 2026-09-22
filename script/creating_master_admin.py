@@ -320,18 +320,60 @@ def build_town_master(local_df):
     return town_master
 
 
-def filter_admin_frames_to_used_ids(country_df, island_df, prefecture_df, commune_df, town_master):
-    used_country_ids = set(town_master["country_id"].dropna())
-    used_island_ids = set(town_master["island_id"].dropna())
-    used_prefecture_ids = set(town_master["prefecture_id"].dropna())
-    used_commune_ids = set(town_master["commune_id"].dropna())
-
-    return (
-        country_df[country_df["country_id"].isin(used_country_ids)].reset_index(drop=True),
-        island_df[island_df["island_id"].isin(used_island_ids)].reset_index(drop=True),
-        prefecture_df[prefecture_df["prefecture_id"].isin(used_prefecture_ids)].reset_index(drop=True),
-        commune_df[commune_df["commune_id"].isin(used_commune_ids)].reset_index(drop=True),
+def build_admin_frames_from_localities(local_df, country_df, island_df, prefecture_df, commune_df):
+    country_lookup = unique_lookup(country_df, "country_id", ["country_name"])
+    island_lookup = unique_lookup(
+        island_df,
+        "island_id",
+        ["country_id", "island_name_fr", "island_name_local"],
     )
+    prefecture_lookup = unique_lookup(
+        prefecture_df,
+        "prefecture_id",
+        ["island_id", "country_id", "prefecture_name"],
+    )
+    commune_lookup = unique_lookup(
+        commune_df,
+        "commune_id",
+        ["prefecture_id", "island_id", "country_id", "commune_name"],
+    )
+
+    country_master = (
+        local_df[["country_id"]]
+        .drop_duplicates()
+        .merge(country_lookup, on="country_id", how="left")
+        .reset_index(drop=True)
+    )
+    island_master = (
+        local_df[["country_id", "island_id"]]
+        .drop_duplicates()
+        .merge(island_lookup, on=["country_id", "island_id"], how="left")
+        .reset_index(drop=True)
+    )
+    prefecture_master = (
+        local_df[["country_id", "island_id", "prefecture_id"]]
+        .drop_duplicates()
+        .merge(
+            prefecture_lookup,
+            on=["country_id", "island_id", "prefecture_id"],
+            how="left",
+        )
+        .loc[:, ["prefecture_name", "prefecture_id", "island_id", "country_id"]]
+        .reset_index(drop=True)
+    )
+    commune_master = (
+        local_df[["country_id", "island_id", "prefecture_id", "commune_id"]]
+        .drop_duplicates()
+        .merge(
+            commune_lookup,
+            on=["country_id", "island_id", "prefecture_id", "commune_id"],
+            how="left",
+        )
+        .loc[:, ["commune_name", "commune_id", "prefecture_id", "island_id", "country_id"]]
+        .reset_index(drop=True)
+    )
+
+    return country_master, island_master, prefecture_master, commune_master
 
 
 def validate_master_quality(country_df, island_df, prefecture_df, commune_df, town_master):
@@ -361,6 +403,16 @@ def validate_master_quality(country_df, island_df, prefecture_df, commune_df, to
     if set(town_master["commune_id"].dropna()) - set(commune_df["commune_id"]):
         raise ValueError("Town master references commune IDs missing from master_commune.xlsx")
 
+    named_frames = {
+        "master_country.xlsx": country_df[["country_name"]],
+        "master_island.xlsx": island_df[["island_name_fr", "island_name_local"]],
+        "master_prefecture.xlsx": prefecture_df[["prefecture_name"]],
+        "master_commune.xlsx": commune_df[["commune_name"]],
+    }
+    for filename, frame in named_frames.items():
+        if frame.isna().any().any():
+            raise ValueError(f"Missing labels detected in {filename}")
+
 
 def save_master_frames(output_dir, country_df, island_df, prefecture_df, commune_df, town_master=None):
     country_df.to_excel(output_dir / "master_country.xlsx", index=False)
@@ -385,8 +437,8 @@ def main():
     if local_df is not None:
         reconciled_localities = reconcile_admin_ids(local_df, prefecture_df, commune_df)
         town_master = build_town_master(reconciled_localities)
-        country_df, island_df, prefecture_df, commune_df = filter_admin_frames_to_used_ids(
-            country_df, island_df, prefecture_df, commune_df, town_master
+        country_df, island_df, prefecture_df, commune_df = build_admin_frames_from_localities(
+            reconciled_localities, country_df, island_df, prefecture_df, commune_df
         )
         validate_master_quality(country_df, island_df, prefecture_df, commune_df, town_master)
 
