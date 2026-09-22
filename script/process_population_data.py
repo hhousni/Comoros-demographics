@@ -1,5 +1,8 @@
 # This script aims to process the data from the INSEED website
+from pathlib import Path
+
 import pandas as pd
+import unicodedata
 
 
 # read the data
@@ -22,6 +25,20 @@ clean_df = clean_df.dropna(subset=['cat']).reset_index(drop=True)
 
 # Known island names in Comoros to track island level changes
 ISLANDS = {"MWALI", "NDZUWANI", "NGAZIDJA"}
+
+
+def normalize_name(value):
+    if pd.isna(value):
+        return ""
+
+    text = unicodedata.normalize("NFKD", str(value))
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = text.strip().lower()
+
+    for char in "-/.()_'":
+        text = text.replace(char, " ")
+
+    return " ".join(text.split())
 
 records = []
 current_country = ""
@@ -82,6 +99,7 @@ final_df = final_df.drop(columns=["cat"])
 
 # 1. Define the desired order for the geography columns
 geo_cols = ["country", "island", "prefecture", "commune", "town_village"]
+output_path = Path("clean_data/comoros_administrative_clean.xlsx")
 
 # 2. Get all remaining columns (excluding the geo columns)
 other_cols = [c for c in final_df.columns if c not in geo_cols]
@@ -160,6 +178,21 @@ df["Longitude_final"] = df["lon_osm"].combine_first(df["lon_orig"])
 # Clean up temporary working columns
 df = df.drop(columns=["lat_orig", "lon_orig", "lat_osm", "lon_osm"])
 df = df[["ville_village", "Latitude_final", "Longitude_final"]]
+df["normalized_ville_village"] = df["ville_village"].apply(normalize_name)
+
+coordinate_fallback = df.dropna(subset=["Latitude_final", "Longitude_final"]).copy()
+coordinate_fallback["coordinate_pair"] = list(
+    zip(coordinate_fallback["Latitude_final"], coordinate_fallback["Longitude_final"])
+)
+unique_coordinate_names = (
+    coordinate_fallback.groupby("normalized_ville_village")["coordinate_pair"]
+    .nunique()
+    .loc[lambda counts: counts == 1]
+    .index
+)
+coordinate_fallback = coordinate_fallback[
+    coordinate_fallback["normalized_ville_village"].isin(unique_coordinate_names)
+].drop_duplicates("normalized_ville_village")
 
 final_df = final_df.merge(
     df[["ville_village", "Latitude_final", "Longitude_final"]],
@@ -167,4 +200,55 @@ final_df = final_df.merge(
     right_on="ville_village",
     how="left",
 )
-final_df.to_excel("clean_data/comoros_administrative_clean.xlsx", index=False)
+if output_path.exists():
+    existing_df = pd.read_excel(output_path)
+    existing_coord_cols = geo_cols + ["Latitude_final", "Longitude_final"]
+    if all(column in existing_df.columns for column in existing_coord_cols):
+        existing_df = existing_df[existing_coord_cols].drop_duplicates(subset=geo_cols)
+        final_df = final_df.merge(
+            existing_df[existing_coord_cols].rename(
+                columns={
+                    "Latitude_final": "Latitude_existing",
+                    "Longitude_final": "Longitude_existing",
+                }
+            ),
+            on=geo_cols,
+            how="left",
+        )
+        final_df["Latitude_final"] = final_df["Latitude_final"].combine_first(
+            final_df["Latitude_existing"]
+        )
+        final_df["Longitude_final"] = final_df["Longitude_final"].combine_first(
+            final_df["Longitude_existing"]
+        )
+        final_df = final_df.drop(columns=["Latitude_existing", "Longitude_existing"])
+
+final_df["normalized_town_village"] = final_df["town_village"].apply(normalize_name)
+final_df = final_df.merge(
+    coordinate_fallback[
+        ["normalized_ville_village", "Latitude_final", "Longitude_final"]
+    ].rename(
+        columns={
+            "Latitude_final": "Latitude_fallback",
+            "Longitude_final": "Longitude_fallback",
+        }
+    ),
+    left_on="normalized_town_village",
+    right_on="normalized_ville_village",
+    how="left",
+)
+final_df["Latitude_final"] = final_df["Latitude_final"].combine_first(
+    final_df["Latitude_fallback"]
+)
+final_df["Longitude_final"] = final_df["Longitude_final"].combine_first(
+    final_df["Longitude_fallback"]
+)
+final_df = final_df.drop(
+    columns=[
+        "normalized_town_village",
+        "normalized_ville_village",
+        "Latitude_fallback",
+        "Longitude_fallback",
+    ]
+)
+final_df.to_excel(output_path, index=False)
