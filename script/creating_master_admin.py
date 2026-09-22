@@ -82,8 +82,16 @@ def load_lookup_frames(project_root, input_file):
         ]
         return prefecture_lookup, commune_lookup
 
-    prefecture_lookup = pd.read_excel(project_root / "masters" / "master_prefecture.xlsx")
-    commune_lookup = pd.read_excel(project_root / "masters" / "master_commune.xlsx")
+    prefecture_path = project_root / "masters" / "master_prefecture.xlsx"
+    commune_path = project_root / "masters" / "master_commune.xlsx"
+    missing_files = [str(path) for path in [prefecture_path, commune_path] if not path.exists()]
+    if missing_files:
+        raise FileNotFoundError(
+            "Missing admin lookup workbook(s): " + ", ".join(missing_files)
+        )
+
+    prefecture_lookup = pd.read_excel(prefecture_path)
+    commune_lookup = pd.read_excel(commune_path)
     return prefecture_lookup, commune_lookup
 
 
