@@ -52,10 +52,14 @@ def apply_aliases(series, aliases):
 
 
 def unique_lookup(df, key, columns):
-    lookup = df[[key] + columns].dropna(subset=[key]).drop_duplicates().copy()
-    if lookup.duplicated(subset=[key]).any():
+    lookup = df[[key] + columns].dropna(subset=[key]).copy()
+    conflicting_keys = (
+        lookup.groupby(key, dropna=False)[columns]
+        .apply(lambda group: len(group.drop_duplicates()) > 1)
+    )
+    if conflicting_keys.any():
         raise ValueError(f"Duplicate values found for {key} in admin lookup data")
-    return lookup
+    return lookup.drop_duplicates(subset=[key]).copy()
 
 
 def load_lookup_frames(project_root, input_file):
