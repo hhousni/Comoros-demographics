@@ -53,9 +53,8 @@ def apply_aliases(series, aliases):
 
 def unique_lookup(df, key, columns):
     lookup = df[[key] + columns].dropna(subset=[key]).copy()
-    conflicting_keys = (
-        lookup.groupby(key, dropna=False)[columns]
-        .apply(lambda group: len(group.drop_duplicates()) > 1)
+    conflicting_keys = lookup.groupby(key, dropna=False).apply(
+        lambda group: len(group[columns].drop_duplicates()) > 1
     )
     if conflicting_keys.any():
         raise ValueError(f"Duplicate values found for {key} in admin lookup data")
