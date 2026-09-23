@@ -28,6 +28,26 @@ def strip_admin_prefix(value):
     return text.strip()
 
 
+def clean_local_commune_name(value):
+    if pd.isna(value):
+        return ""
+    text = str(value).strip()
+    match = re.search(r"\bcommune\b\s*(?:de)?\s*(.*)$", text, flags=re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return strip_admin_prefix(text)
+
+
+def clean_local_prefecture_name(value):
+    if pd.isna(value):
+        return ""
+    text = str(value).strip()
+    text = strip_admin_prefix(text)
+    if re.search(r"\bcommune\b", text, flags=re.IGNORECASE):
+        return text.split("Commune", 1)[0].strip()
+    return text.strip()
+
+
 def build_name_lookup(df, name_col, code_col):
     lookup = {}
     for _, row in df[[name_col, code_col]].dropna().iterrows():
@@ -162,8 +182,8 @@ if clean_input.exists():
     commune_source["norm"] = commune_source["adm3_name"].apply(normalize_name) if "adm3_name" in commune_source.columns else commune_source["commune_name"].apply(normalize_name)
     commune_map = dict(zip(commune_source["norm"], commune_source["adm3_pcode"])) if "adm3_pcode" in commune_source.columns else dict(zip(commune_source["norm"], commune_source["commune_id"]))
 
-    local_df["prefecture_name"] = local_df["prefecture"].apply(strip_admin_prefix)
-    local_df["commune_name"] = local_df["commune"].apply(strip_admin_prefix)
+    local_df["prefecture_name"] = local_df["prefecture"].apply(clean_local_prefecture_name)
+    local_df["commune_name"] = local_df["commune"].apply(clean_local_commune_name)
 
     prefecture_aliases = {
         "nioumachoua": "KM33",
@@ -172,10 +192,22 @@ if clean_input.exists():
         "mboude": "KM26",
         "moya": "KM16",
     }
+    commune_aliases = {
+        "moinbassa": "KM323",
+        "bambao mtsanga": "KM111",
+        "ngadzale": "KM115",
+        "shaweni": "KM122",
+        "bandrani ya mitsangani": "KM132",
+        "bambao ya djou": "KM273",
+        "oichili yaboini": "KM283",
+        "ngandzale": "KM115",
+    }
     local_df["prefecture_id"] = local_df["prefecture_name"].apply(
         lambda x: find_best_match(x, pref_map) or prefecture_aliases.get(normalize_name(x))
     )
-    local_df["commune_id"] = local_df["commune_name"].apply(lambda x: find_best_match(x, commune_map))
+    local_df["commune_id"] = local_df["commune_name"].apply(
+        lambda x: find_best_match(x, commune_map) or commune_aliases.get(normalize_name(x))
+    )
 
     local_df["town_village_id"] = ""
     for group_key, group in local_df.groupby(["commune_id", "prefecture_id"], dropna=False):
