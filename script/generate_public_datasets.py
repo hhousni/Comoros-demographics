@@ -143,14 +143,24 @@ def load_master_tables():
 
 def get_population_fact():
     base = read_population_raw()
-    value_columns = [col for col in base.columns if str(col).isdigit()]
+
+    def is_year_column(value):
+        if pd.isna(value):
+            return False
+        try:
+            num = float(str(value).strip().replace(",", ""))
+        except ValueError:
+            return False
+        return num.is_integer() and 1900 <= num <= 2100
+
+    value_columns = [col for col in base.columns if col not in {"country", "island", "prefecture", "commune", "town_village"} and is_year_column(col)]
     long = base.melt(
         id_vars=["country", "island", "prefecture", "commune", "town_village"],
         value_vars=value_columns,
         var_name="year",
         value_name="population",
     )
-    long["year"] = pd.to_numeric(long["year"], errors="coerce")
+    long["year"] = pd.to_numeric(long["year"], errors="coerce").astype("Int64")
     long = long.dropna(subset=["year", "population"]).copy()
     long["country_name"] = long["country"].str.strip()
     long["island_name"] = long["island"].str.strip()
@@ -213,6 +223,7 @@ def get_population_fact():
     )
 
     long["population"] = pd.to_numeric(long["population"], errors="coerce")
+    long["population"] = long["population"].round().astype(int)
     long = long.dropna(subset=["population"]).copy()
 
     fact = long[
@@ -232,6 +243,7 @@ def get_population_fact():
         ]
     ].copy()
     fact = fact.sort_values(["year", "island_name", "prefecture_name", "commune_name", "town_village_name"]).reset_index(drop=True)
+    fact["year"] = fact["year"].astype(int)
     return fact
 
 
@@ -244,6 +256,7 @@ def write_csv(df, filename):
 
 def build_public_datasets():
     fact = get_population_fact()
+    fact["population"] = fact["population"].round().astype(int)
 
     # Main fact table
     write_csv(fact, "population_fact.csv")
@@ -251,21 +264,25 @@ def build_public_datasets():
     island_df = (
         fact.groupby(["country_id", "island_id", "island_name", "year"], as_index=False)["population"].sum()
     )
+    island_df["population"] = island_df["population"].round().astype(int)
     write_csv(island_df, "population_by_island.csv")
 
     prefecture_df = (
         fact.groupby(["country_id", "island_id", "prefecture_id", "prefecture_name", "year"], as_index=False)["population"].sum()
     )
+    prefecture_df["population"] = prefecture_df["population"].round().astype(int)
     write_csv(prefecture_df, "population_by_prefecture.csv")
 
     commune_df = (
         fact.groupby(["country_id", "island_id", "prefecture_id", "prefecture_name", "commune_id", "commune_name", "year"], as_index=False)["population"].sum()
     )
+    commune_df["population"] = commune_df["population"].round().astype(int)
     write_csv(commune_df, "population_by_commune.csv")
 
     town_df = (
         fact.groupby(["country_id", "island_id", "prefecture_id", "prefecture_name", "commune_id", "commune_name", "town_village_id", "town_village_name", "year"], as_index=False)["population"].sum()
     )
+    town_df["population"] = town_df["population"].round().astype(int)
     write_csv(town_df, "population_by_town_village.csv")
 
     # Also export the master reference tables in public CSV form.
