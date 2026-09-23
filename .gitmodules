@@ -1,0 +1,3 @@
+[submodule "external/comoros-admin-master"]
+	path = external/comoros-admin-master
+	url = https://github.com/hhousni/comoros-admin-master.git

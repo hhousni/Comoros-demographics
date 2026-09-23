@@ -8,10 +8,38 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = ROOT / "raw_data"
-MASTER_DIR = ROOT / "masters"
+REMOTE_MASTER_DIR = ROOT / "external" / "comoros-admin-master" / "masters"
+LOCAL_MASTER_DIR = ROOT / "masters"
 DATASET_DIR = ROOT / "datasets"
 
 YEARS = list(range(2017, 2043))
+
+
+def resolve_master_file(directory, stem_name):
+    for suffix in [".xlsx", ".csv"]:
+        candidate = directory / f"{stem_name}{suffix}"
+        if candidate.exists():
+            return candidate
+    return directory / f"{stem_name}.xlsx"
+
+
+def resolve_master_dir():
+    for candidate in [REMOTE_MASTER_DIR, LOCAL_MASTER_DIR]:
+        if candidate.exists() and any(
+            resolve_master_file(candidate, name).exists()
+            for name in [
+                "master_country",
+                "master_island",
+                "master_prefecture",
+                "master_commune",
+                "master_town_village",
+            ]
+        ):
+            return candidate
+    return LOCAL_MASTER_DIR
+
+
+MASTER_DIR = resolve_master_dir()
 
 
 def normalize_name(value):
@@ -111,27 +139,36 @@ def read_population_raw():
 
 
 def ensure_master_files():
+    global MASTER_DIR
+    MASTER_DIR = resolve_master_dir()
     required = [
-        MASTER_DIR / "master_country.xlsx",
-        MASTER_DIR / "master_island.xlsx",
-        MASTER_DIR / "master_prefecture.xlsx",
-        MASTER_DIR / "master_commune.xlsx",
-        MASTER_DIR / "master_town_village.xlsx",
+        resolve_master_file(MASTER_DIR, "master_country"),
+        resolve_master_file(MASTER_DIR, "master_island"),
+        resolve_master_file(MASTER_DIR, "master_prefecture"),
+        resolve_master_file(MASTER_DIR, "master_commune"),
+        resolve_master_file(MASTER_DIR, "master_town_village"),
     ]
     missing = [str(path) for path in required if not path.exists()]
     if missing:
         raise FileNotFoundError(
-            "Missing master files: " + ", ".join(missing) + ". Run creating_master_admin.py first."
+            "Missing master files: " + ", ".join(missing) + ". Clone or sync the admin master repo under external/comoros-admin-master or regenerate the local masters."
         )
+
+
+def read_master_table(stem_name):
+    path = resolve_master_file(MASTER_DIR, stem_name)
+    if path.suffix.lower() == ".csv":
+        return pd.read_csv(path)
+    return pd.read_excel(path)
 
 
 def load_master_tables():
     ensure_master_files()
-    country = pd.read_excel(MASTER_DIR / "master_country.xlsx")
-    island = pd.read_excel(MASTER_DIR / "master_island.xlsx")
-    prefecture = pd.read_excel(MASTER_DIR / "master_prefecture.xlsx")
-    commune = pd.read_excel(MASTER_DIR / "master_commune.xlsx")
-    town = pd.read_excel(MASTER_DIR / "master_town_village.xlsx")
+    country = read_master_table("master_country")
+    island = read_master_table("master_island")
+    prefecture = read_master_table("master_prefecture")
+    commune = read_master_table("master_commune")
+    town = read_master_table("master_town_village")
 
     country["country_name_norm"] = country["country_name"].apply(normalize_name)
     island["island_name_norm"] = island["island_name_fr"].apply(normalize_name)
@@ -244,6 +281,27 @@ def get_population_fact():
     ].copy()
     fact = fact.sort_values(["year", "island_name", "prefecture_name", "commune_name", "town_village_name"]).reset_index(drop=True)
     fact["year"] = fact["year"].astype(int)
+
+    country, island, prefecture, commune, town = load_master_tables()
+
+    fact["country_name_local"] = fact["country_name"]
+    fact["island_name_local"] = fact["island_name"]
+    fact["prefecture_name_local"] = fact["prefecture_name"]
+    fact["commune_name_local"] = fact["commune_name"]
+    fact["town_village_name_local"] = fact["town_village_name"]
+
+    country_lookup = dict(zip(country["country_id"], country["country_name"]))
+    island_lookup = dict(zip(island["island_id"], island["island_name_fr"]))
+    prefecture_lookup = dict(zip(prefecture["prefecture_id"], prefecture["prefecture_name"]))
+    commune_lookup = dict(zip(commune["commune_id"], commune["commune_name"]))
+    town_lookup = dict(zip(town["town_village_id"], town["town_village_name"]))
+
+    fact["country_name"] = fact["country_id"].map(country_lookup).fillna(fact["country_name"])
+    fact["island_name"] = fact["island_id"].map(island_lookup).fillna(fact["island_name"])
+    fact["prefecture_name"] = fact["prefecture_id"].map(prefecture_lookup).fillna(fact["prefecture_name"])
+    fact["commune_name"] = fact["commune_id"].map(commune_lookup).fillna(fact["commune_name"])
+    fact["town_village_name"] = fact["town_village_id"].map(town_lookup).fillna(fact["town_village_name"])
+
     return fact
 
 
@@ -258,8 +316,36 @@ def build_public_datasets():
     fact = get_population_fact()
     fact["population"] = fact["population"].round().astype(int)
 
-    # Main fact table
+    local_fact = fact.copy()
+    local_fact = local_fact[
+        [
+            "country_id",
+            "country_name_local",
+            "island_id",
+            "island_name_local",
+            "prefecture_id",
+            "prefecture_name_local",
+            "commune_id",
+            "commune_name_local",
+            "town_village_id",
+            "town_village_name_local",
+            "year",
+            "population",
+        ]
+    ].copy()
+    local_fact = local_fact.rename(
+        columns={
+            "country_name_local": "country_name",
+            "island_name_local": "island_name",
+            "prefecture_name_local": "prefecture_name",
+            "commune_name_local": "commune_name",
+            "town_village_name_local": "town_village_name",
+        }
+    )
+
+    # Main fact table uses canonical names from the master tables.
     write_csv(fact, "population_fact.csv")
+    write_csv(local_fact, "population_fact_local.csv")
 
     island_df = (
         fact.groupby(["country_id", "island_id", "island_name", "year"], as_index=False)["population"].sum()
@@ -286,16 +372,15 @@ def build_public_datasets():
     write_csv(town_df, "population_by_town_village.csv")
 
     # Also export the master reference tables in public CSV form.
-    for name in [
-        "master_country.xlsx",
-        "master_island.xlsx",
-        "master_prefecture.xlsx",
-        "master_commune.xlsx",
-        "master_town_village.xlsx",
+    for stem_name in [
+        "master_country",
+        "master_island",
+        "master_prefecture",
+        "master_commune",
+        "master_town_village",
     ]:
-        df = pd.read_excel(MASTER_DIR / name)
-        csv_name = name.replace(".xlsx", ".csv")
-        write_csv(df, csv_name)
+        df = read_master_table(stem_name)
+        write_csv(df, f"{stem_name}.csv")
 
 
 if __name__ == "__main__":
