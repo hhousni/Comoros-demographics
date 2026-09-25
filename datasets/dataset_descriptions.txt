@@ -1,0 +1,77 @@
+Population nationale en série longue
+Titre : Population nationale des Comores en série longue
+Description : Série chronologique de la population nationale des Comores, organisée en format long avec une ligne par année. Les données sont présentées selon les années couvertes par le jeu de données et permettent une analyse temporelle de l’évolution de la population.
+Niveau géographique : pays
+Période : 2017-2042
+Source : INSEED
+Traitement et publication : données préparées et publiées par Comoros Open Data
+
+Population par île en série longue
+Titre : Population par île des Comores en série longue
+Description : Série chronologique de la population par île des Comores, organisée en format long pour faciliter les comparaisons entre îles et l’analyse de l’évolution territoriale sur la période couverte par le jeu de données.
+Niveau géographique : île
+Période : 2017-2042
+Source : INSEED
+Traitement et publication : données préparées et publiées par Comoros Open Data
+
+Population par préfecture en série longue
+Titre : Population par préfecture des Comores en série longue
+Description : Série chronologique de la population par préfecture des Comores, présentée en format long pour permettre des analyses territoriales et des comparaisons inter-préfectures sur la période couverte par le jeu de données.
+Niveau géographique : préfecture
+Période : 2017-2042
+Source : INSEED
+Traitement et publication : données préparées et publiées par Comoros Open Data
+
+Population par commune en série longue
+Titre : Population par commune des Comores en série longue
+Description : Série chronologique de la population par commune des Comores, organisée en format long pour une analyse temporelle détaillée au niveau communal sur la période couverte par le fichier.
+Niveau géographique : commune
+Période : 2017-2042
+Source : INSEED
+Traitement et publication : données préparées et publiées par Comoros Open Data
+
+Population par village / localité en série longue
+Titre : Population par village / localité des Comores en série longue
+Description : Série chronologique de la population par village ou localité des Comores, présentée en format long pour les analyses locales, la densité de population et la distribution spatiale sur la période couverte par le fichier.
+Niveau géographique : village / localité
+Période : 2017-2042
+Source : INSEED
+Traitement et publication : données préparées et publiées par Comoros Open Data
+
+Table de référence du pays
+Titre : Table de référence du pays
+Description : Table de référence du pays des Comores avec son identifiant administratif et ses métadonnées de base.
+Niveau géographique : pays
+Variables clés : country_id, country_name
+Source : référentiel administratif préparé pour la publication
+
+Table de référence des îles
+Titre : Table de référence des îles
+Description : Référentiel des îles des Comores avec leurs identifiants, leurs libellés et leurs relations avec le pays.
+Niveau géographique : île
+Variables clés : country_id, island_id, island_name_fr, island_name_local
+Source : référentiel administratif préparé pour la publication
+
+Table de référence des préfectures
+Titre : Table de référence des préfectures
+Description : Référentiel des préfectures des Comores, incluant les identifiants administratifs et les relations hiérarchiques avec les îles et le pays.
+Niveau géographique : préfecture
+Variables clés : country_id, island_id, prefecture_id, prefecture_name
+Source : référentiel administratif préparé pour la publication
+
+Table de référence des communes
+Titre : Table de référence des communes
+Description : Référentiel des communes des Comores avec leurs identifiants administratifs, leurs noms et leur rattachement aux préfectures et aux îles.
+Niveau géographique : commune
+Variables clés : country_id, island_id, prefecture_id, commune_id, commune_name
+Source : référentiel administratif préparé pour la publication
+
+Table de référence des villages et localités
+Titre : Table de référence des villages et localités
+Description : Référentiel géographique détaillé des villages et localités des Comores, avec leurs identifiants et leurs coordonnées géographiques.
+Niveau géographique : village / localité
+Variables clés : country_id, island_id, prefecture_id, commune_id, town_village_id, town_village_name, latitude, longitude
+Source : référentiel administratif et données de localisation préparés pour la publication
+
+Note de publication
+Les données de population sont issues de la source INSEED. Les jeux de données ont ensuite été préparés, harmonisés et publiés par Comoros Open Data. La période exacte est celle couverte par les années présentes dans chaque fichier.

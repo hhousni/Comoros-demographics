@@ -347,28 +347,39 @@ def build_public_datasets():
     write_csv(fact, "population_fact.csv")
     write_csv(local_fact, "population_fact_local.csv")
 
+    country_df = (
+        fact.groupby(["country_id", "country_name", "year"], as_index=False)["population"].sum()
+    )
+    country_df["population"] = country_df["population"].round().astype(int)
+    country_df = country_df[["country_id", "country_name", "year", "population"]].copy()
+    write_csv(country_df, "population_serie_longue.csv")
+
     island_df = (
         fact.groupby(["country_id", "island_id", "island_name", "year"], as_index=False)["population"].sum()
     )
     island_df["population"] = island_df["population"].round().astype(int)
+    write_csv(island_df, "population_ile_serie_longue.csv")
     write_csv(island_df, "population_by_island.csv")
 
     prefecture_df = (
         fact.groupby(["country_id", "island_id", "prefecture_id", "prefecture_name", "year"], as_index=False)["population"].sum()
     )
     prefecture_df["population"] = prefecture_df["population"].round().astype(int)
+    write_csv(prefecture_df, "population_prefecture_serie_longue.csv")
     write_csv(prefecture_df, "population_by_prefecture.csv")
 
     commune_df = (
         fact.groupby(["country_id", "island_id", "prefecture_id", "prefecture_name", "commune_id", "commune_name", "year"], as_index=False)["population"].sum()
     )
     commune_df["population"] = commune_df["population"].round().astype(int)
+    write_csv(commune_df, "population_commune_serie_longue.csv")
     write_csv(commune_df, "population_by_commune.csv")
 
     town_df = (
         fact.groupby(["country_id", "island_id", "prefecture_id", "prefecture_name", "commune_id", "commune_name", "town_village_id", "town_village_name", "year"], as_index=False)["population"].sum()
     )
     town_df["population"] = town_df["population"].round().astype(int)
+    write_csv(town_df, "population_village_serie_longue.csv")
     write_csv(town_df, "population_by_town_village.csv")
 
     # Also export the master reference tables in public CSV form.
