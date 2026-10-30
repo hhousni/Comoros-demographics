@@ -31,6 +31,8 @@ Audit date: 2026-10-22. Numbers below are from that audit.
 - Write a mapping report `datasets/_mapping_report.csv` (gitignored) listing raw name → ID → method (`exact`/`alias`).
 - Remove the duplicate computations.
 
+**Found 2026-10-30 (data-checker).** `find_best_match` (SequenceMatcher ≥ 0.82) runs before the alias tables and currently matches 6 communes: `MOINBASSA`→KM323, `BAMBAO MSTANGA`→KM111, `NGADZALE`→KM115, `SHAWENI`→KM122, `Commune BANDRANI YA MITSANGANI`→KM132, `OICHILI YABOINI`→KM283. These need alias entries. The alias `"bambao mtsanga"` is never used (source spells `MSTANGA`). The `^Commune de ` regex misses `Commune BANDRANI YA MITSANGANI` (no "de"), which leaves the prefix in `commune_name_local`.
+
 **Done when.** Script fails loudly on any unmatched unit; report generated; outputs identical to after Task 1 (or differences explained in the Log).
 
 ## 3. [x] Prefecture list inconsistency (Moya, Mboudé, Kartala)
@@ -64,6 +66,7 @@ Add to `tests/` (pytest, read from `datasets/`):
 - `(town_village_id, year)` unique; years = 2017–2042; same village count every year.
 - Aggregates are consistent: village sums = commune = prefecture = island = country, per year.
 - No null IDs or populations; populations are non-negative integers.
+- Published totals match the source aggregate rows (see Task 8).
 
 **Done when.** Tests fail on the pre-Task-1 data and pass after.
 
@@ -95,6 +98,33 @@ Add to `tests/` (pytest, read from `datasets/`):
 - Add `requirements.txt` (pandas, openpyxl, pytest).
 - Update `README.md`: remove references to `clean_data/` and `masters/` if they stay absent, document the commands from `CLAUDE.md`.
 
+## 8. [ ] Published totals differ from INSEED's own totals (blocking)
+
+**Problem (data-checker, 2026-10-30).** Every level is the sum of villages. In the INSEED sheet `Pop îles ajustée`, some commune rows are not the sum of their villages:
+- `Commune de SIMA` (KM152), 2018–2029: villages minus commune row = −187 (2018) to −2,744.5 (2029). 2029: commune row 24,644.25, we publish 21,900. Village SIMA barely grows (8,737 in 2017, 8,837 in 2029) while the commune row drops from 24,644 (2029) to 22,324 (2030).
+- `Commune de NGADZALE` (KM115), 2040–2042: −100 each year.
+- Effect on published files vs the source `Comores` row: 2018 −183.6 (776,267 vs 776,450.6); 2029 −2,755.2; 2042 −97.4. Anjouan 2029: 439,131 vs 441,879.4. 2030–2039: ±7 max (rounding).
+
+**Decision (owner, 2026-10-30):** keep the sum of villages as the published figure (consistent bottom-up), document the gap.
+
+**Do.**
+- `datasets/README.md` + `CHANGELOG.md`: FR + EN note explaining the source inconsistency, with the gap per year for Sima, Ngadzalé, Anjouan and the country.
+- Test comparing published totals with the source aggregate rows (country, island, commune), tolerance for rounding, the gaps above listed as known exceptions.
+- Draft a short message to INSEED reporting the inconsistency (Cowork can send it).
+
+**Done when.** The test passes; any new gap with the source fails it; the README explains the gap.
+
+## 9. [ ] Complete the metadata (DATA_CONTRACT §5)
+
+**Problem (data-checker, 2026-10-30).** `datasets/README.md` and `dataset_descriptions.txt` lack: titles and descriptions in English, licence, full source (document name, URL, retrieval date), frequency, column dictionary, the 3 hand spot-checks. Descriptions never say the figures are **projections (medium hypothesis)**, not observed data. They say "Comoros Open Data" instead of "Comores Open Data". The README lists `population_fact_local.csv`, which is gitignored and not published.
+
+**Do.**
+- Per published file: title FR + EN, description FR + EN (state "projections, hypothèse moyenne"), source (INSEED, workbook name, URL if any, date), licence (check INSEED's terms; default CC BY 4.0), coverage, frequency `once`, columns.
+- Spot-checks (verified 2026-10-30): FOMBONI 2017 17,290 → 17,290; FOMBONI 2042 31,906.29 → 31,906; MUTSAMUDU 2030 36,916.70 → 36,917.
+- Fix the organisation name; remove or mark `population_fact_local.csv` as local-only.
+
+**Done when.** The data-checker reports no missing metadata field.
+
 ---
 
 ## Log
@@ -103,3 +133,4 @@ Add to `tests/` (pytest, read from `datasets/`):
 - 2026-10-22 — Task 3: added legal research on Moya (2011 law puts it under Sima).
 - 2026-10-22 — Task 3 done: alias moya → KM15 in script; datasets regenerated (Sima 2017 = 59,313 = 35,173 + Moya 24,140; national totals unchanged; no orphan prefecture IDs); note added to datasets/README.md. Village-ID bug (Task 1) still present in regenerated files.
 - 2026-10-22 — Task 1 done: villages now matched by (commune_id, normalized name) in `assign_town_village_ids()`; unmatched or ambiguous villages raise an error; 19 master duplicates resolved explicitly in `AMBIGUOUS_TOWN_VILLAGE_IDS`. Result: 319 distinct village IDs (was 308), no duplicate (village, year), all IDs inside their commune. Totals unchanged (2017: 758,318). Added `tests/test_village_ids.py` (part of Task 4). Published village IDs changed for the previously mis-assigned villages.
+- 2026-10-30 — data-checker run: verdict blocking (Task 8). Added Tasks 8 (totals vs source, decision: keep sum of villages) and 9 (metadata); details added to Tasks 2 and 4. Fixes from 2026-10-22 committed (aedc304).
