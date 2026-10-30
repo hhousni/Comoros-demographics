@@ -28,3 +28,11 @@ Files included:
 - Each row contains one geography unit and one year.
 - `population` is reported in persons.
 - All IDs follow the administrative master code structure used by the Comoros project.
+
+## Découpage administratif / Administrative boundaries
+
+- Les identifiants et noms suivent le référentiel administratif (comoros-admin-master), aligné sur la loi n°11-006/AU du 2 mai 2011 portant organisation territoriale.
+- Les tableaux sources de l'INSEED présentent 18 préfectures : Moya y figure comme préfecture distincte, et Mitsamiouli et Mboudé sont séparées. Dans ces jeux de données, conformément à la loi de 2011 :
+  - la commune de Moya est rattachée à la préfecture de Sima (KM15) ;
+  - Mitsamiouli et Mboudé sont regroupées dans la préfecture Mitsamiouli-Mboudé (KM26).
+- Les noms tels qu'ils figurent dans la source INSEED sont conservés dans les colonnes `*_name_local` de `population_fact.csv`.
