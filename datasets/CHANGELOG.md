@@ -1,5 +1,16 @@
 # Journal des modifications
 
+## 2026-10-31 — Référentiel des villages corrigé
+
+Aucun chiffre de population ne change : tous les fichiers de population sont identiques à la version précédente.
+
+`master_town_village.csv` (copie du référentiel `comoros-admin-master`, version f71a551) passe de 338 à 319 villages :
+- 19 lignes en double supprimées (un même nom de village recopié dans deux communes) ; aucun fichier de population ne les utilisait ;
+- les 6 villages de Moya (`KM151`) sont rattachés à la préfecture de Sima (`KM15`) au lieu de `KM16`, qui n'existe pas ;
+- 6 coordonnées fausses effacées (village placé dans une autre commune, ou deux villages au même point).
+
+Détail : `external/comoros-admin-master/CHANGELOG.md`.
+
 ## 2026-10-22 — Corrections des identifiants
 
 Les chiffres de population ne changent pas : les totaux national, par île et par commune sont identiques à la version précédente. Seuls certains identifiants et rattachements ont été corrigés.

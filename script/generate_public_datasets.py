@@ -178,34 +178,6 @@ def load_master_tables():
     return country, island, prefecture, commune, town
 
 
-# The admin master contains two rows for some (commune, village name) pairs: every
-# village name shared by several communes was duplicated into each of them, with
-# coordinates copied across. Until the master is cleaned up (see TASKS.md), pick
-# the right row explicitly. Rule: the row whose coordinates fall in the right
-# island/area; if neither has usable coordinates, the lowest ID.
-AMBIGUOUS_TOWN_VILLAGE_IDS = {
-    ("KM112", "domoni"): "KM112_0001",     # Domoni (Anjouan): no coordinates -> lowest ID
-    ("KM115", "salamani"): "KM115_0003",   # Ngadzale, SE Anjouan (lon 44.50)
-    ("KM153", "salamani"): "KM153_0014",   # Vouani, W Anjouan (lon 44.36)
-    ("KM121", "kangani"): "KM121_0004",    # Adda, Anjouan (lon 44.47)
-    ("KM311", "kangani"): "KM311_0005",    # Djando, Moheli (lon 43.82)
-    ("KM131", "maweni"): "KM131_0004",     # no coordinates -> lowest ID
-    ("KM151", "maweni"): "KM151_0006",     # no coordinates -> lowest ID
-    ("KM143", "barakani"): "KM143_0003",   # Ouani, Anjouan (lon 44.43)
-    ("KM332", "barakani"): "KM332_0002",   # Moheli: other row has Anjouan coordinates
-    ("KM152", "milembeni"): "KM152_0007",  # Sima, Anjouan (lon 44.26)
-    ("KM234", "milembeni"): "KM234_0003",  # Grande Comore: other row has Anjouan coordinates
-    ("KM241", "pidjani"): "KM241_0005",    # Domba, Mbadjini Est, SE Grande Comore (lat -11.76)
-    ("KM264", "pidjani"): "KM264_0004",    # Nyuma Komo, N Grande Comore (lat -11.41)
-    ("KM262", "koua"): "KM262_0002",       # both rows share the same point -> lowest ID
-    ("KM265", "koua"): "KM265_0008",       # both rows share the same point -> lowest ID
-    ("KM271", "dzahani"): "KM271_0008",    # Bambao ya Hari, S of Moroni (lat -11.77)
-    ("KM283", "dzahani"): "KM283_0003",    # Oichili, NE Grande Comore (lat -11.59)
-    ("KM252", "domoni"): "KM252_0006",     # no coordinates -> lowest ID
-    ("KM323", "domoni"): "KM323_0003",     # no coordinates -> lowest ID
-}
-
-
 def assign_town_village_ids(long, town):
     """Match each village within its own commune. Raise if anything is unmatched or ambiguous."""
     candidates = {}
@@ -217,12 +189,7 @@ def assign_town_village_ids(long, town):
     for row in pairs.itertuples():
         key = (row.commune_id, normalize_name(row.town_village_name))
         ids = candidates.get(key, [])
-        if key in AMBIGUOUS_TOWN_VILLAGE_IDS:
-            chosen = AMBIGUOUS_TOWN_VILLAGE_IDS[key]
-            if chosen not in ids:
-                raise ValueError(f"AMBIGUOUS_TOWN_VILLAGE_IDS entry {key} -> {chosen} not found in master")
-            resolved[key] = chosen
-        elif len(ids) == 1:
+        if len(ids) == 1:
             resolved[key] = ids[0]
         elif not ids:
             unmatched.append(f"{row.commune_name} ({row.commune_id}) / {row.town_village_name}")

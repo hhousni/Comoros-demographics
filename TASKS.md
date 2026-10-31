@@ -78,7 +78,7 @@ Add to `tests/` (pytest, read from `datasets/`):
 
 **Decision:** _(owner to fill in)_
 
-## 6. [ ] Master coverage gaps (report only — fix belongs in admin-master repo)
+## 6. [x] Master coverage gaps (report only — fix belongs in admin-master repo)
 
 - **Duplicate village rows in the master (root cause of Task 1).** Each village name shared by several communes was copied into every one of those communes, with coordinates copied too: 19 (commune, name) pairs have two rows. After Task 1 the 19 unused master villages are exactly these phantom rows. The script picks the right one via `AMBIGUOUS_TOWN_VILLAGE_IDS`; once the master is fixed, delete that dict (the script will fail loudly if an entry no longer exists). Pairs: Domoni (KM112, KM252, KM323), Salamani (KM115, KM153), Kangani (KM121, KM311), Maweni (KM131, KM151), Barakani (KM143, KM332), Milembeni (KM152, KM234), Pidjani (KM241, KM264), Koua (KM262, KM265), Dzahani (KM271, KM283).
 - (Before Task 1 the audit counted 30 unused master villages; that number was inflated by the bug.)
@@ -134,3 +134,4 @@ Add to `tests/` (pytest, read from `datasets/`):
 - 2026-10-22 — Task 3 done: alias moya → KM15 in script; datasets regenerated (Sima 2017 = 59,313 = 35,173 + Moya 24,140; national totals unchanged; no orphan prefecture IDs); note added to datasets/README.md. Village-ID bug (Task 1) still present in regenerated files.
 - 2026-10-22 — Task 1 done: villages now matched by (commune_id, normalized name) in `assign_town_village_ids()`; unmatched or ambiguous villages raise an error; 19 master duplicates resolved explicitly in `AMBIGUOUS_TOWN_VILLAGE_IDS`. Result: 319 distinct village IDs (was 308), no duplicate (village, year), all IDs inside their commune. Totals unchanged (2017: 758,318). Added `tests/test_village_ids.py` (part of Task 4). Published village IDs changed for the previously mis-assigned villages.
 - 2026-10-30 — data-checker run: verdict blocking (Task 8). Added Tasks 8 (totals vs source, decision: keep sum of villages) and 9 (metadata); details added to Tasks 2 and 4. Fixes from 2026-10-22 committed (aedc304).
+- 2026-10-31 — Task 6 done in comoros-admin-master (f71a551): 19 phantom village rows removed, Moya villages under KM15, 6 wrong coordinates cleared, tests against OCHA COD-AB. Submodule updated; `AMBIGUOUS_TOWN_VILLAGE_IDS` removed (each village now has exactly one master row). Regenerated: all population files byte-identical; only `datasets/master_town_village.csv` changed (338 → 319 rows). The comorosmaps follow-up stays open.
