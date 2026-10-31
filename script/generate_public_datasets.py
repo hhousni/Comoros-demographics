@@ -83,7 +83,8 @@ def find_best_match(name, lookup):
     return best_match
 
 
-def read_population_raw():
+def read_source_sheet():
+    """Rows of the INSEED sheet from the header row on; column "cat" holds the row label."""
     raw_path = RAW_DIR / "Revision_des_Projections_demographiques_hypothese_moyenne_3a125e5b6c.xlsx"
     if not raw_path.exists():
         raise FileNotFoundError(f"Required population file not found: {raw_path}")
@@ -93,7 +94,34 @@ def read_population_raw():
     clean_df.iloc[0, 0] = "cat"
     clean_df.columns = clean_df.iloc[0]
     clean_df = clean_df.iloc[1:].copy().reset_index(drop=True)
-    clean_df = clean_df.dropna(subset=["cat"]).reset_index(drop=True)
+    return clean_df.dropna(subset=["cat"]).reset_index(drop=True)
+
+
+def read_source_totals():
+    """INSEED's own total rows (country, islands, communes), one row per label and year.
+
+    The published figures are sums of villages; these rows are only used to check them.
+    """
+    sheet = read_source_sheet()
+    year_columns = [c for c in sheet.columns if re.fullmatch(r"\d{4}(\.0)?", str(c).strip())]
+    records = []
+    for _, row in sheet.iterrows():
+        label = str(row["cat"]).strip()
+        if label == "Comores":
+            level = "country"
+        elif label in {"MWALI", "NDZUWANI", "NGAZIDJA"}:
+            level = "island"
+        elif label.startswith("Commune"):
+            level = "commune"
+        else:
+            continue
+        for year in year_columns:
+            records.append({"level": level, "label": label, "year": int(float(year)), "population": float(row[year])})
+    return pd.DataFrame(records)
+
+
+def read_population_raw():
+    clean_df = read_source_sheet()
 
     records = []
     current_country = ""

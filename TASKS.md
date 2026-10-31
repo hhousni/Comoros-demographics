@@ -98,7 +98,7 @@ Add to `tests/` (pytest, read from `datasets/`):
 - Add `requirements.txt` (pandas, openpyxl, pytest).
 - Update `README.md`: remove references to `clean_data/` and `masters/` if they stay absent, document the commands from `CLAUDE.md`.
 
-## 8. [ ] Published totals differ from INSEED's own totals (blocking)
+## 8. [x] Published totals differ from INSEED's own totals (blocking)
 
 **Problem (data-checker, 2026-10-30).** Every level is the sum of villages. In the INSEED sheet `Pop îles ajustée`, some commune rows are not the sum of their villages:
 - `Commune de SIMA` (KM152), 2018–2029: villages minus commune row = −187 (2018) to −2,744.5 (2029). 2029: commune row 24,644.25, we publish 21,900. Village SIMA barely grows (8,737 in 2017, 8,837 in 2029) while the commune row drops from 24,644 (2029) to 22,324 (2030).
@@ -135,3 +135,4 @@ Add to `tests/` (pytest, read from `datasets/`):
 - 2026-10-22 — Task 1 done: villages now matched by (commune_id, normalized name) in `assign_town_village_ids()`; unmatched or ambiguous villages raise an error; 19 master duplicates resolved explicitly in `AMBIGUOUS_TOWN_VILLAGE_IDS`. Result: 319 distinct village IDs (was 308), no duplicate (village, year), all IDs inside their commune. Totals unchanged (2017: 758,318). Added `tests/test_village_ids.py` (part of Task 4). Published village IDs changed for the previously mis-assigned villages.
 - 2026-10-30 — data-checker run: verdict blocking (Task 8). Added Tasks 8 (totals vs source, decision: keep sum of villages) and 9 (metadata); details added to Tasks 2 and 4. Fixes from 2026-10-22 committed (aedc304).
 - 2026-10-31 — Task 6 done in comoros-admin-master (f71a551): 19 phantom village rows removed, Moya villages under KM15, 6 wrong coordinates cleared, tests against OCHA COD-AB. Submodule updated; `AMBIGUOUS_TOWN_VILLAGE_IDS` removed (each village now has exactly one master row). Regenerated: all population files byte-identical; only `datasets/master_town_village.csv` changed (338 → 319 rows). The comorosmaps follow-up stays open.
+- 2026-10-31 — Task 8 done: `read_source_totals()` reads INSEED's total rows; `tests/test_source_totals.py` compares them with the published sums (tolerance: half a person per village; Sima 2018–2029 and Ngadzalé 2040–2042 listed as known gaps, a second test fails if INSEED fixes them). Gap table FR + EN in `datasets/README.md`, CHANGELOG entry. Datasets regenerated: byte-identical. Draft to INSEED: `../docs/comms/drafts/2026-10-31_email_inseed-totaux-sima.md`.

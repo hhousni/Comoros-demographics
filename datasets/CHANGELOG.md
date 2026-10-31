@@ -1,5 +1,9 @@
 # Journal des modifications
 
+## 2026-10-31 — Écart avec les totaux de l'INSEED documenté
+
+Aucun chiffre ne change. La section « Écart avec les totaux de l'INSEED » du README explique pourquoi nos totaux de Sima (2018–2029), Ngadzalé (2040–2042), d'Anjouan et du pays diffèrent des lignes de total du fichier INSEED, avec l'écart année par année. Un test vérifie désormais ces écarts.
+
 ## 2026-10-31 — Référentiel des villages corrigé
 
 Aucun chiffre de population ne change : tous les fichiers de population sont identiques à la version précédente.
