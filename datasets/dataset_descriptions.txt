@@ -11,7 +11,7 @@ Niveau géographique : pays (Union des Comores)
 Période : 2017–2042, chaque année
 Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
 Licence : CC BY 4.0
-Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
+Documentation (colonnes, méthode, écarts avec l'INSEED) : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
 ============================================================
 Fichier : population_ile_serie_longue.csv
@@ -22,7 +22,7 @@ Niveau géographique : île (Anjouan, Grande Comore, Mohéli)
 Période : 2017–2042, chaque année
 Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
 Licence : CC BY 4.0
-Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
+Documentation (colonnes, méthode, écarts avec l'INSEED) : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
 ============================================================
 Fichier : population_prefecture_serie_longue.csv
@@ -33,7 +33,7 @@ Niveau géographique : préfecture (16 préfectures habitées)
 Période : 2017–2042, chaque année
 Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
 Licence : CC BY 4.0
-Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
+Documentation (colonnes, méthode, écarts avec l'INSEED) : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
 ============================================================
 Fichier : population_commune_serie_longue.csv
@@ -44,7 +44,7 @@ Niveau géographique : commune (54 communes habitées)
 Période : 2017–2042, chaque année
 Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
 Licence : CC BY 4.0
-Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
+Documentation (colonnes, méthode, écarts avec l'INSEED) : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
 ============================================================
 Fichier : population_village_serie_longue.csv
@@ -55,4 +55,4 @@ Niveau géographique : village / localité (319 villages et localités)
 Période : 2017–2042, chaque année
 Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
 Licence : CC BY 4.0
-Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
+Documentation (colonnes, méthode, écarts avec l'INSEED) : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
