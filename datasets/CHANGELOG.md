@@ -1,5 +1,9 @@
 # Journal des modifications
 
+## 2026-11-01 — Métadonnées complètes
+
+Aucun chiffre ne change. Le README décrit chaque fichier publié en français et en anglais, dit clairement que ce sont des projections de l'INSEED (hypothèse moyenne) et donne la source, la licence, la couverture, la fréquence, les colonnes et les vérifications à la main. Nouveaux titres proposés pour le site (« … projections 2017–2042 »). `dataset_descriptions.txt` contient les textes à coller dans le catalogue. Correction : le découpage suit les codes de l'OCHA (17 préfectures), et non la loi de 2011 (16).
+
 ## 2026-10-31 — Écart avec les totaux de l'INSEED documenté
 
 Aucun chiffre ne change. La section « Écart avec les totaux de l'INSEED » du README explique pourquoi nos totaux de Sima (2018–2029), Ngadzalé (2040–2042), d'Anjouan et du pays diffèrent des lignes de total du fichier INSEED, avec l'écart année par année. Un test vérifie désormais ces écarts.

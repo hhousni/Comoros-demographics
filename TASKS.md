@@ -114,7 +114,7 @@ Add to `tests/` (pytest, read from `datasets/`):
 
 **Done when.** The test passes; any new gap with the source fails it; the README explains the gap.
 
-## 9. [ ] Complete the metadata (DATA_CONTRACT §5)
+## 9. [x] Complete the metadata (DATA_CONTRACT §5)
 
 **Problem (data-checker, 2026-10-30).** `datasets/README.md` and `dataset_descriptions.txt` lack: titles and descriptions in English, licence, full source (document name, URL, retrieval date), frequency, column dictionary, the 3 hand spot-checks. Descriptions never say the figures are **projections (medium hypothesis)**, not observed data. They say "Comoros Open Data" instead of "Comores Open Data". The README lists `population_fact_local.csv`, which is gitignored and not published.
 
@@ -136,3 +136,4 @@ Add to `tests/` (pytest, read from `datasets/`):
 - 2026-10-30 — data-checker run: verdict blocking (Task 8). Added Tasks 8 (totals vs source, decision: keep sum of villages) and 9 (metadata); details added to Tasks 2 and 4. Fixes from 2026-10-22 committed (aedc304).
 - 2026-10-31 — Task 6 done in comoros-admin-master (f71a551): 19 phantom village rows removed, Moya villages under KM15, 6 wrong coordinates cleared, tests against OCHA COD-AB. Submodule updated; `AMBIGUOUS_TOWN_VILLAGE_IDS` removed (each village now has exactly one master row). Regenerated: all population files byte-identical; only `datasets/master_town_village.csv` changed (338 → 319 rows). The comorosmaps follow-up stays open.
 - 2026-10-31 — Task 8 done: `read_source_totals()` reads INSEED's total rows; `tests/test_source_totals.py` compares them with the published sums (tolerance: half a person per village; Sima 2018–2029 and Ngadzalé 2040–2042 listed as known gaps, a second test fails if INSEED fixes them). Gap table FR + EN in `datasets/README.md`, CHANGELOG entry. Datasets regenerated: byte-identical. Draft to INSEED: `../docs/comms/drafts/2026-10-31_email_inseed-totaux-sima.md`.
+- 2026-11-01 — Task 9 done: `datasets/README.md` rewritten (shared record: producer INSEED with UNFPA, workbook created 2021-06-23, base RGPH 2017 = 758,316, no public URL found, licence CC BY 4.0 pending INSEED's terms, frequency `once`; per-file titles and descriptions FR + EN stating projections; column dictionary; spot-checks; boundaries follow OCHA, not the 2011 law; unpublished files listed, `population_fact_local.csv` local-only). `dataset_descriptions.txt` = French catalog texts. Reference-table records moved to comoros-admin-master README.

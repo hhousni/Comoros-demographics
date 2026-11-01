@@ -1,77 +1,58 @@
-Population nationale en série longue
-Titre : Population nationale des Comores en série longue
-Description : Série chronologique de la population nationale des Comores, organisée en format long avec une ligne par année. Les données sont présentées selon les années couvertes par le jeu de données et permettent une analyse temporelle de l’évolution de la population.
-Niveau géographique : pays
-Période : 2017-2042
-Source : INSEED
-Traitement et publication : données préparées et publiées par Comoros Open Data
+Textes du champ « Description » du catalogue, prêts à coller (français).
+Titres, textes anglais, colonnes, source et vérifications : README.md du même dossier.
+Tables de référence (master_*.csv) : leurs fiches sont dans le dépôt comoros-admin-master.
 
-Population par île en série longue
-Titre : Population par île des Comores en série longue
-Description : Série chronologique de la population par île des Comores, organisée en format long pour faciliter les comparaisons entre îles et l’analyse de l’évolution territoriale sur la période couverte par le jeu de données.
-Niveau géographique : île
-Période : 2017-2042
-Source : INSEED
-Traitement et publication : données préparées et publiées par Comoros Open Data
+============================================================
+Fichier : population_serie_longue.csv
+Titre : Population des Comores, projections 2017–2042
 
-Population par préfecture en série longue
-Titre : Population par préfecture des Comores en série longue
-Description : Série chronologique de la population par préfecture des Comores, présentée en format long pour permettre des analyses territoriales et des comparaisons inter-préfectures sur la période couverte par le jeu de données.
-Niveau géographique : préfecture
-Période : 2017-2042
-Source : INSEED
-Traitement et publication : données préparées et publiées par Comoros Open Data
+Population totale de l'Union des Comores pour chaque année de 2017 à 2042, une ligne par année. Ce sont des projections de l'INSEED (hypothèse moyenne) : seule l'année 2017 vient du recensement (RGPH 2017), les années suivantes sont calculées. Le total de chaque année est la somme des 319 villages et localités, arrondis à la personne près ; il peut différer de quelques personnes du total de l'INSEED, de 184 à 2 755 personnes entre 2018 et 2029 à cause d'une incohérence dans la ligne de la commune de Sima du fichier source, et d'environ 100 personnes en 2040–2042 (commune de Ngandzalé).
+Niveau géographique : pays (Union des Comores)
+Période : 2017–2042, chaque année
+Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
+Licence : CC BY 4.0
+Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
-Population par commune en série longue
-Titre : Population par commune des Comores en série longue
-Description : Série chronologique de la population par commune des Comores, organisée en format long pour une analyse temporelle détaillée au niveau communal sur la période couverte par le fichier.
-Niveau géographique : commune
-Période : 2017-2042
-Source : INSEED
-Traitement et publication : données préparées et publiées par Comoros Open Data
+============================================================
+Fichier : population_ile_serie_longue.csv
+Titre : Population par île, projections 2017–2042
 
-Population par village / localité en série longue
-Titre : Population par village / localité des Comores en série longue
-Description : Série chronologique de la population par village ou localité des Comores, présentée en format long pour les analyses locales, la densité de population et la distribution spatiale sur la période couverte par le fichier.
-Niveau géographique : village / localité
-Période : 2017-2042
-Source : INSEED
-Traitement et publication : données préparées et publiées par Comoros Open Data
+Population de chacune des trois îles (Anjouan, Grande Comore, Mohéli) pour chaque année de 2017 à 2042, une ligne par île et par année. Projections de l'INSEED (hypothèse moyenne) : seule l'année 2017 vient du recensement (RGPH 2017). Chaque total est la somme des villages de l'île ; pour Anjouan, il est inférieur à la ligne de l'INSEED de 2018 à 2029 (jusqu'à 2 748 personnes, commune de Sima) et d'environ 100 personnes en 2040–2042 (commune de Ngandzalé).
+Niveau géographique : île (Anjouan, Grande Comore, Mohéli)
+Période : 2017–2042, chaque année
+Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
+Licence : CC BY 4.0
+Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
-Table de référence du pays
-Titre : Table de référence du pays
-Description : Table de référence du pays des Comores avec son identifiant administratif et ses métadonnées de base.
-Niveau géographique : pays
-Variables clés : country_id, country_name
-Source : référentiel administratif préparé pour la publication
+============================================================
+Fichier : population_prefecture_serie_longue.csv
+Titre : Population par préfecture, projections 2017–2042
 
-Table de référence des îles
-Titre : Table de référence des îles
-Description : Référentiel des îles des Comores avec leurs identifiants, leurs libellés et leurs relations avec le pays.
-Niveau géographique : île
-Variables clés : country_id, island_id, island_name_fr, island_name_local
-Source : référentiel administratif préparé pour la publication
+Population des 16 préfectures habitées pour chaque année de 2017 à 2042, une ligne par préfecture et par année. Projections de l'INSEED (hypothèse moyenne) : seule l'année 2017 vient du recensement (RGPH 2017). Les préfectures suivent le référentiel administratif de Comores Open Data (OCHA) : la commune de Moya est comptée dans la préfecture de Sima, et Mitsamiouli et Mboudé forment une seule préfecture, alors que l'INSEED les présente séparément. Chaque total est la somme des villages de la préfecture.
+Niveau géographique : préfecture (16 préfectures habitées)
+Période : 2017–2042, chaque année
+Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
+Licence : CC BY 4.0
+Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
-Table de référence des préfectures
-Titre : Table de référence des préfectures
-Description : Référentiel des préfectures des Comores, incluant les identifiants administratifs et les relations hiérarchiques avec les îles et le pays.
-Niveau géographique : préfecture
-Variables clés : country_id, island_id, prefecture_id, prefecture_name
-Source : référentiel administratif préparé pour la publication
+============================================================
+Fichier : population_commune_serie_longue.csv
+Titre : Population par commune, projections 2017–2042
 
-Table de référence des communes
-Titre : Table de référence des communes
-Description : Référentiel des communes des Comores avec leurs identifiants administratifs, leurs noms et leur rattachement aux préfectures et aux îles.
-Niveau géographique : commune
-Variables clés : country_id, island_id, prefecture_id, commune_id, commune_name
-Source : référentiel administratif préparé pour la publication
+Population des 54 communes habitées pour chaque année de 2017 à 2042, une ligne par commune et par année. Projections de l'INSEED (hypothèse moyenne) : seule l'année 2017 vient du recensement (RGPH 2017). Chaque total est la somme des villages de la commune. Deux communes diffèrent de la ligne de l'INSEED : Sima de 2018 à 2029 (jusqu'à 2 744 personnes de moins) et Ngandzalé (NGADZALE chez l'INSEED) de 2040 à 2042 (100 personnes de moins), car dans le fichier source ces lignes ne sont pas égales à la somme de leurs villages.
+Niveau géographique : commune (54 communes habitées)
+Période : 2017–2042, chaque année
+Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
+Licence : CC BY 4.0
+Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
 
-Table de référence des villages et localités
-Titre : Table de référence des villages et localités
-Description : Référentiel géographique détaillé des villages et localités des Comores, avec leurs identifiants et leurs coordonnées géographiques.
-Niveau géographique : village / localité
-Variables clés : country_id, island_id, prefecture_id, commune_id, town_village_id, town_village_name, latitude, longitude
-Source : référentiel administratif et données de localisation préparés pour la publication
+============================================================
+Fichier : population_village_serie_longue.csv
+Titre : Population par village et localité, projections 2017–2042
 
-Note de publication
-Les données de population sont issues de la source INSEED. Les jeux de données ont ensuite été préparés, harmonisés et publiés par Comoros Open Data. La période exacte est celle couverte par les années présentes dans chaque fichier.
+Population des 319 villages et localités pour chaque année de 2017 à 2042, une ligne par village et par année, avec sa commune, sa préfecture et son île. Projections de l'INSEED (hypothèse moyenne) : seule l'année 2017 vient du recensement (RGPH 2017). Comores Open Data arrondit les chiffres de l'INSEED, qui ont des décimales, à la personne près. Les identifiants des villages sont ceux du référentiel administratif de Comores Open Data ; les coordonnées GPS sont dans la « Table de référence des villages et localités ».
+Niveau géographique : village / localité (319 villages et localités)
+Période : 2017–2042, chaque année
+Source : INSEED, projections démographiques 2017–2042, hypothèse moyenne (classeur « Revision_des_Projections_demographiques_hypothese_moyenne », 2021), à partir du RGPH 2017.
+Licence : CC BY 4.0
+Préparation : Comores Open Data — méthode, colonnes et écarts avec l'INSEED : https://github.com/hhousni/Comoros-demographics/tree/main/datasets
